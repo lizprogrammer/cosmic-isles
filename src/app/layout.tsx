@@ -4,21 +4,32 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: "Cosmic Isles",
   description: "A Farcaster Mini App adventure",
+  metadataBase: new URL('https://cosmic-isles.vercel.app'),
   openGraph: {
     title: "Cosmic Isles",
     description: "A Farcaster Mini App adventure",
-    images: ['/icon.png'], // This shows as preview image
+    url: 'https://cosmic-isles.vercel.app/game',
+    siteName: 'Cosmic Isles',
+    images: [
+      {
+        url: 'https://cosmic-isles.vercel.app/icon.png',
+        width: 512,
+        height: 512,
+        alt: 'Cosmic Isles Game Icon',
+      }
+    ],
+    locale: 'en_US',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
     title: "Cosmic Isles",
     description: "A Farcaster Mini App adventure",
-    images: ['/icon.png'],
+    images: ['https://cosmic-isles.vercel.app/icon.png'],
   },
   icons: {
-    icon: '/icon.png', // Favicon (browser tab icon)
-    apple: '/icon.png', // Apple touch icon
+    icon: '/icon.png',
+    apple: '/icon.png',
   }
 }
 
