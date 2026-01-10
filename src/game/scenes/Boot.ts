@@ -1,4 +1,4 @@
-import * as Phaser from "phaser"
+import * as Phaser from "phaser";
 
 export class Boot extends Phaser.Scene {
   constructor() {
