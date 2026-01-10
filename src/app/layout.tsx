@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "Cosmic Isles",
   description: "A Farcaster Mini App adventure",
   metadataBase: new URL('https://cosmic-isles.vercel.app'),
+  manifest: 'https://api.farcaster.xyz/miniapps/hosted-manifest/019baa46-22b9-d5c5-be37-a3f72b063671',
   other: {
     "fc:frame": "vNext",
     "fc:frame:image": "https://cosmic-isles.vercel.app/splash.png",
@@ -46,6 +47,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Script
           src="https://esm.sh/@farcaster/frame-sdk"
           strategy="beforeInteractive"
+        />
+        <link 
+          rel="manifest" 
+          href="https://api.farcaster.xyz/miniapps/hosted-manifest/019baa46-22b9-d5c5-be37-a3f72b063671"
         />
       </head>
       <body>
