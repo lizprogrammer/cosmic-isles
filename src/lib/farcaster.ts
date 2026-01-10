@@ -1,14 +1,18 @@
-import sdk from "@farcaster/frame-sdk";
-
-let isInitialized = false;
-
 export async function initFarcaster() {
-  if (isInitialized) return;
-  
   try {
-    // Wait for SDK to be ready
+    // Wait for SDK to be available on window
+    if (typeof window === 'undefined') return null;
+    
+    // @ts-ignore - SDK loaded via script tag
+    const sdk = window.sdk || (await import("@farcaster/frame-sdk")).default;
+    
+    if (!sdk) {
+      console.error("Farcaster SDK not found");
+      return null;
+    }
+    
+    // Signal ready to Farcaster
     await sdk.actions.ready();
-    isInitialized = true;
     
     console.log("Farcaster SDK ready!");
     
@@ -19,8 +23,6 @@ export async function initFarcaster() {
     return context;
   } catch (error) {
     console.error("Farcaster SDK error:", error);
-    // Still mark as initialized to prevent retries
-    isInitialized = true;
     return null;
   }
 }
