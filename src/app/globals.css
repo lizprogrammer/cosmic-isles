@@ -9,19 +9,28 @@ html, body {
   height: 100%;
   overflow: hidden;
   background: #000;
+  margin: 0;
+  padding: 0;
+}
+
+body > div {
+  height: 100%;
 }
 
 #game {
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: fixed;
-  top: 0;
-  left: 0;
+  width: 100vw !important;
+  height: 100vh !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 canvas {
   display: block;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
