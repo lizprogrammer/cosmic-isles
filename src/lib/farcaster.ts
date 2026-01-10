@@ -1,28 +1,19 @@
-export async function initFarcaster() {
+export async function callFarcasterReady() {
   try {
-    // Wait for SDK to be available on window
-    if (typeof window === 'undefined') return null;
+    if (typeof window === 'undefined') return false;
     
-    // @ts-ignore - SDK loaded via script tag
-    const sdk = window.sdk || (await import("@farcaster/frame-sdk")).default;
-    
-    if (!sdk) {
-      console.error("Farcaster SDK not found");
-      return null;
+    // @ts-ignore
+    if (window.sdk?.actions?.ready) {
+      // @ts-ignore
+      await window.sdk.actions.ready();
+      return true;
     }
     
-    // Signal ready to Farcaster
+    const { default: sdk } = await import("@farcaster/frame-sdk");
     await sdk.actions.ready();
-    
-    console.log("Farcaster SDK ready!");
-    
-    // Get context
-    const context = await sdk.context;
-    console.log("Farcaster context:", context);
-    
-    return context;
+    return true;
   } catch (error) {
-    console.error("Farcaster SDK error:", error);
-    return null;
+    console.error("Failed to call ready:", error);
+    return false;
   }
 }
