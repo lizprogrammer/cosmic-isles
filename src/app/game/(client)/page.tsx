@@ -9,29 +9,13 @@ export default function GameClientPage() {
   useEffect(() => {
     setMounted(true)
     
-    // Load SDK and call ready using data URI
+    // Load Farcaster SDK module
     if (typeof window !== 'undefined') {
-      const moduleCode = `
-import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
-(async () => {
-  try {
-    await sdk.actions.ready();
-    console.log('✅ Farcaster SDK ready called!');
-    window.farcasterReady = true;
-  } catch (error) {
-    console.error('❌ SDK ready error:', error);
-  }
-})();
-`;
-      
-      const encoded = btoa(moduleCode);
-      const dataUri = `data:text/javascript;base64,${encoded}`;
-      
       const script = document.createElement('script');
       script.type = 'module';
-      script.src = dataUri;
-      script.crossOrigin = 'anonymous';
+      script.src = '/farcaster-init.js';
       document.head.appendChild(script);
+      console.log('Loading Farcaster SDK module...');
     }
   }, [])
 
@@ -48,9 +32,9 @@ import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
         }
         
         if ((window as any).farcasterReady) {
-          console.log("SDK is ready, initializing game...");
+          console.log("✅ SDK ready, initializing game...");
         } else {
-          console.warn("SDK not ready, starting game anyway...");
+          console.warn("⚠️ SDK not ready after 3s, starting game anyway...");
         }
         
         // Load Phaser
@@ -58,11 +42,11 @@ import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
         const { config } = await import("../../../game/config")
         
         const game = new Phaser.Game(config)
-        console.log("Game initialized!");
+        console.log("🎮 Game initialized!");
         
         return () => game.destroy(true)
       } catch (error) {
-        console.error("Game init error:", error)
+        console.error("❌ Game init error:", error)
       }
     }
     
