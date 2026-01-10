@@ -1,7 +1,5 @@
 "use client"
 import { useEffect, useState } from "react"
-import * as Phaser from "phaser"
-import { config } from "../../../game/config"
 
 export const dynamic = 'force-dynamic'
 
@@ -15,8 +13,25 @@ export default function GameClientPage() {
   useEffect(() => {
     if (!mounted) return
     
-    const game = new Phaser.Game(config)
-    return () => game.destroy(true)
+    // Import Phaser and config only in the browser
+    const initGame = async () => {
+      const Phaser = await import("phaser")
+      const { config } = await import("../../../game/config")
+      
+      const game = new Phaser.Game(config)
+      
+      return () => game.destroy(true)
+    }
+    
+    let cleanup: (() => void) | undefined
+    
+    initGame().then(cleanupFn => {
+      cleanup = cleanupFn
+    })
+    
+    return () => {
+      if (cleanup) cleanup()
+    }
   }, [mounted])
 
   if (!mounted) {
