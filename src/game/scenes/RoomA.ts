@@ -8,6 +8,7 @@ export default class RoomA extends Phaser.Scene {
   private stone?: Phaser.GameObjects.Sprite;
   private hasSpokenToGuide: boolean = false;
   private dialogText?: Phaser.GameObjects.Text;
+  private background?: Phaser.GameObjects.Image;
 
   constructor() { 
     super("RoomA"); 
@@ -20,8 +21,10 @@ export default class RoomA extends Phaser.Scene {
   }
 
   create() {
-    // Background
-    this.add.image(400, 300, "roomA");
+    // Background - make it interactive for tap-to-move
+    this.background = this.add.image(400, 300, "roomA")
+      .setInteractive()
+      .setDepth(0);
 
     // Create player character
     this.player = this.add.sprite(100, 500, "guidebot")
@@ -30,13 +33,13 @@ export default class RoomA extends Phaser.Scene {
 
     // Guidebot NPC
     this.guidebot = this.add.sprite(150, 300, "guidebot")
-      .setInteractive({ useHandCursor: true })
+      .setInteractive()
       .setScale(1)
       .setDepth(5);
 
     // Glowing stone (collectible)
     this.stone = this.add.sprite(600, 320, "stone")
-      .setInteractive({ useHandCursor: true })
+      .setInteractive()
       .setScale(0.5)
       .setDepth(5);
 
@@ -68,9 +71,24 @@ export default class RoomA extends Phaser.Scene {
       color: "#aaaaaa"
     }).setOrigin(0.5).setDepth(100);
 
+    // Background tap to move
+    this.background.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (!this.player) return;
+      
+      const targetX = Phaser.Math.Clamp(pointer.x, 50, 750);
+      const targetY = Phaser.Math.Clamp(pointer.y, 50, 550);
+      
+      this.tweens.add({
+        targets: this.player,
+        x: targetX,
+        y: targetY,
+        duration: 500,
+        ease: 'Power2'
+      });
+    });
+
     // Guidebot interaction
-    this.guidebot.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-      pointer.event.stopPropagation();
+    this.guidebot.on("pointerdown", () => {
       if (!this.hasSpokenToGuide) {
         this.showDialog("Welcome to Island One! Find the glowing stone to continue.");
         this.hasSpokenToGuide = true;
@@ -80,8 +98,7 @@ export default class RoomA extends Phaser.Scene {
     });
 
     // Stone interaction
-    this.stone.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-      pointer.event.stopPropagation();
+    this.stone.on("pointerdown", () => {
       if (this.isPlayerNear(this.stone!)) {
         playerState.hasStone = true;
         playerState.score += 10;
@@ -104,31 +121,6 @@ export default class RoomA extends Phaser.Scene {
         });
       } else {
         this.showDialog("Get closer to collect the stone!");
-      }
-    });
-
-    // Touch/mobile controls - tap background to move
-    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      if (!this.player) return;
-      
-      // Check if clicking on an interactive game object
-      const objectsUnderPointer = this.input.hitTestPointer(pointer);
-      const clickedInteractive = objectsUnderPointer.some((obj: any) => {
-        return obj === this.guidebot || obj === this.stone;
-      });
-      
-      // Only move player if clicking empty space
-      if (!clickedInteractive) {
-        const targetX = Phaser.Math.Clamp(pointer.x, 50, 750);
-        const targetY = Phaser.Math.Clamp(pointer.y, 50, 550);
-        
-        this.tweens.add({
-          targets: this.player,
-          x: targetX,
-          y: targetY,
-          duration: 500,
-          ease: 'Power2'
-        });
       }
     });
   }
