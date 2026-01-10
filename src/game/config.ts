@@ -1,9 +1,9 @@
 import Phaser from 'phaser'
 import { Boot } from './scenes/Boot'
 import AvatarCreator from './scenes/AvatarCreator'
-import { RoomA } from './scenes/RoomA'
-import { RoomB } from './scenes/RoomB'
-import { RoomC } from './scenes/RoomC'
+import RoomA from './scenes/RoomA'
+import RoomB from './scenes/RoomB'
+import RoomC from './scenes/RoomC'
 
 export const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
