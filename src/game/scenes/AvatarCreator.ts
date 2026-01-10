@@ -1,4 +1,4 @@
-import * as Phaser from "phaser"
+import * as Phaser from "phaser";
 import { playerState } from "../state/PlayerState";
 
 export default class AvatarCreator extends Phaser.Scene {
