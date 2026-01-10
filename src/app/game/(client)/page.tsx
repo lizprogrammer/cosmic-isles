@@ -1,65 +1,39 @@
 "use client"
 import { useEffect, useState } from "react"
-import Script from "next/script"
 
 export const dynamic = 'force-dynamic'
 
 export default function GameClientPage() {
   const [mounted, setMounted] = useState(false)
-  const [sdkReady, setSdkReady] = useState(false)
 
   useEffect(() => {
     setMounted(true)
     
-    // Call ready IMMEDIATELY on mount
-    const callReady = async () => {
-      try {
-        console.log("Attempting to call ready...");
-        
-        // Try multiple ways to access the SDK
-        if (typeof window !== 'undefined') {
-          // Method 1: Direct window access
-          // @ts-ignore
-          if (window.sdk?.actions?.ready) {
-            console.log("Found SDK on window, calling ready...");
-            // @ts-ignore
-            await window.sdk.actions.ready();
-            console.log("Ready called successfully!");
-            setSdkReady(true);
-            return;
-          }
-          
-          // Method 2: Import SDK
-          try {
-            const { default: sdk } = await import("@farcaster/frame-sdk");
-            console.log("Imported SDK, calling ready...");
-            await sdk.actions.ready();
-            console.log("Ready called successfully!");
-            setSdkReady(true);
-            return;
-          } catch (e) {
-            console.log("Could not import SDK:", e);
-          }
-          
-          // Method 3: Wait and retry
-          console.log("SDK not found, waiting...");
-          setTimeout(callReady, 100);
+    // Load and call SDK ready immediately
+    if (typeof window !== 'undefined') {
+      const script = document.createElement('script');
+      script.type = 'module';
+      script.innerHTML = `
+        import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
+        try {
+          await sdk.actions.ready();
+          console.log('✅ Farcaster SDK ready called successfully!');
+        } catch (error) {
+          console.error('❌ Error calling ready:', error);
         }
-      } catch (error) {
-        console.error("Error calling ready:", error);
-        // Try again after delay
-        setTimeout(callReady, 100);
-      }
-    };
-    
-    callReady();
+      `;
+      document.head.appendChild(script);
+    }
   }, [])
 
   useEffect(() => {
-    if (!mounted || !sdkReady) return
+    if (!mounted) return
     
     const initGame = async () => {
       try {
+        // Small delay to ensure SDK is ready
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
         console.log("Initializing game...");
         
         // Load Phaser
@@ -84,7 +58,7 @@ export default function GameClientPage() {
     return () => {
       if (cleanup) cleanup()
     }
-  }, [mounted, sdkReady])
+  }, [mounted])
 
   if (!mounted) {
     return (
@@ -98,42 +72,28 @@ export default function GameClientPage() {
           overflow: "hidden",
           background: "#000",
           display: "flex",
-          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          color: "#fff",
-          gap: "1rem"
+          color: "#fff"
         }}
       >
-        <div>Loading Farcaster SDK...</div>
-        <div style={{ fontSize: "12px", opacity: 0.7 }}>
-          {sdkReady ? "SDK Ready ✓" : "Waiting for SDK..."}
-        </div>
+        Loading...
       </div>
     )
   }
 
   return (
-    <>
-      <Script
-        src="https://esm.sh/@farcaster/frame-sdk"
-        strategy="beforeInteractive"
-        onLoad={() => {
-          console.log("SDK script loaded from Script tag");
-        }}
-      />
-      <div
-        id="game"
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100vw",
-          height: "100vh",
-          overflow: "hidden",
-          background: "#000"
-        }}
-      />
-    </>
+    <div
+      id="game"
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
+        overflow: "hidden",
+        background: "#000"
+      }}
+    />
   )
 }
