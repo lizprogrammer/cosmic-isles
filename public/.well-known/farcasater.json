@@ -1,1 +1,6 @@
-public/.well-known/farcaster.json
+{
+  "version": "v1",
+  "name": "Cosmic Isles",
+  "icon": "https://your-domain/icon.png",
+  "homeUrl": "https://your-domain"
+}
