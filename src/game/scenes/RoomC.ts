@@ -1,4 +1,4 @@
-import Phaser from "phaser";
+import * as Phaser from "phaser";
 import { questState } from "../state/QuestState";
 
 export default class RoomC extends Phaser.Scene {
