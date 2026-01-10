@@ -3,11 +3,19 @@ export interface PlayerState {
   bodyColor: string
   outfit: string
   accessory: string | null
+  score: number
+  choices: string[]
+  itemsCollected: string[]
+  playstyle: "explorer" | "warrior" | "diplomat" | null
 }
 
 export const playerState: PlayerState = {
   hasStone: false,
   bodyColor: "base-blue",
   outfit: "outfit1",
-  accessory: null
+  accessory: null,
+  score: 0,
+  choices: [],
+  itemsCollected: [],
+  playstyle: null
 }
