@@ -9,32 +9,29 @@ export default function GameClientPage() {
   useEffect(() => {
     setMounted(true)
     
-    // Load SDK and call ready using a proper module
+    // Load SDK and call ready using data URI
     if (typeof window !== 'undefined') {
       const moduleCode = `
-        import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
-        (async () => {
-          try {
-            await sdk.actions.ready();
-            console.log('✅ Farcaster SDK ready called!');
-            window.farcasterReady = true;
-          } catch (error) {
-            console.error('❌ SDK ready error:', error);
-          }
-        })();
-      `;
+import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
+(async () => {
+  try {
+    await sdk.actions.ready();
+    console.log('✅ Farcaster SDK ready called!');
+    window.farcasterReady = true;
+  } catch (error) {
+    console.error('❌ SDK ready error:', error);
+  }
+})();
+`;
       
-      const blob = new Blob([moduleCode], { type: 'text/javascript' });
-      const url = URL.createObjectURL(blob);
+      const encoded = btoa(moduleCode);
+      const dataUri = `data:text/javascript;base64,${encoded}`;
       
       const script = document.createElement('script');
       script.type = 'module';
-      script.src = url;
+      script.src = dataUri;
+      script.crossOrigin = 'anonymous';
       document.head.appendChild(script);
-      
-      return () => {
-        URL.revokeObjectURL(url);
-      };
     }
   }, [])
 
@@ -43,14 +40,18 @@ export default function GameClientPage() {
     
     const initGame = async () => {
       try {
-        // Wait for SDK to be ready
+        // Wait for SDK to be ready (max 3 seconds)
         let attempts = 0;
         while (!(window as any).farcasterReady && attempts < 30) {
           await new Promise(resolve => setTimeout(resolve, 100));
           attempts++;
         }
         
-        console.log("Initializing game...");
+        if ((window as any).farcasterReady) {
+          console.log("SDK is ready, initializing game...");
+        } else {
+          console.warn("SDK not ready, starting game anyway...");
+        }
         
         // Load Phaser
         const Phaser = await import("phaser")
