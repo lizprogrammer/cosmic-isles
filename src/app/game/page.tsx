@@ -10,8 +10,11 @@ import { config } from "../../game/config"
 
 export default function GamePage() {
   useEffect(() => {
-    const game = new Phaser.Game(config)
-    return () => game.destroy(true)
+    // Ensure Phaser only runs in the browser
+    if (typeof window !== "undefined") {
+      const game = new Phaser.Game(config)
+      return () => game.destroy(true)
+    }
   }, [])
 
   return (
