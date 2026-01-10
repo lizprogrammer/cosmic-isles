@@ -9,20 +9,32 @@ export default function GameClientPage() {
   useEffect(() => {
     setMounted(true)
     
-    // Load and call SDK ready immediately
+    // Load SDK and call ready using a proper module
     if (typeof window !== 'undefined') {
+      const moduleCode = `
+        import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
+        (async () => {
+          try {
+            await sdk.actions.ready();
+            console.log('✅ Farcaster SDK ready called!');
+            window.farcasterReady = true;
+          } catch (error) {
+            console.error('❌ SDK ready error:', error);
+          }
+        })();
+      `;
+      
+      const blob = new Blob([moduleCode], { type: 'text/javascript' });
+      const url = URL.createObjectURL(blob);
+      
       const script = document.createElement('script');
       script.type = 'module';
-      script.innerHTML = `
-        import { sdk } from 'https://esm.sh/@farcaster/frame-sdk';
-        try {
-          await sdk.actions.ready();
-          console.log('✅ Farcaster SDK ready called successfully!');
-        } catch (error) {
-          console.error('❌ Error calling ready:', error);
-        }
-      `;
+      script.src = url;
       document.head.appendChild(script);
+      
+      return () => {
+        URL.revokeObjectURL(url);
+      };
     }
   }, [])
 
@@ -31,8 +43,12 @@ export default function GameClientPage() {
     
     const initGame = async () => {
       try {
-        // Small delay to ensure SDK is ready
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Wait for SDK to be ready
+        let attempts = 0;
+        while (!(window as any).farcasterReady && attempts < 30) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+        }
         
         console.log("Initializing game...");
         
