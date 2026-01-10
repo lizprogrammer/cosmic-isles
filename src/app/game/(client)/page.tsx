@@ -38,6 +38,9 @@ export default function GameClientPage() {
     return (
       <div
         style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
           width: "100vw",
           height: "100vh",
           overflow: "hidden",
@@ -57,6 +60,9 @@ export default function GameClientPage() {
     <div
       id="game"
       style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
         width: "100vw",
         height: "100vh",
         overflow: "hidden",
