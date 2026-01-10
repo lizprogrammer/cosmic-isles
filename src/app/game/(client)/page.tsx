@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
-import Phaser from "phaser"
+import * as Phaser from "phaser"
 import { config } from "../../../game/config"
 
 export default function GameClientPage() {
