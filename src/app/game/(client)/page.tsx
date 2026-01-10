@@ -13,14 +13,25 @@ export default function GameClientPage() {
   useEffect(() => {
     if (!mounted) return
     
-    // Import Phaser and config only in the browser
     const initGame = async () => {
-      const Phaser = await import("phaser")
-      const { config } = await import("../../../game/config")
-      
-      const game = new Phaser.Game(config)
-      
-      return () => game.destroy(true)
+      try {
+        // Initialize Farcaster SDK FIRST
+        const { initFarcaster } = await import("../../../lib/farcaster")
+        await initFarcaster()
+        
+        // Small delay to ensure SDK is fully ready
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
+        // Then load Phaser
+        const Phaser = await import("phaser")
+        const { config } = await import("../../../game/config")
+        
+        const game = new Phaser.Game(config)
+        
+        return () => game.destroy(true)
+      } catch (error) {
+        console.error("Game init error:", error)
+      }
     }
     
     let cleanup: (() => void) | undefined
