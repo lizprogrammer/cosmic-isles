@@ -6,7 +6,6 @@ import { config } from "../../../game/config"
 
 export default function GameClientPage() {
   useEffect(() => {
-    // Ensure Phaser only runs in the browser
     const game = new Phaser.Game(config)
     return () => game.destroy(true)
   }, [])
