@@ -12,10 +12,8 @@ export const metadata: Metadata = {
     siteName: 'Cosmic Isles',
     images: [
       {
-        url: 'https://cosmic-isles.vercel.app/icon.png',
-        width: 512,
-        height: 512,
-        alt: 'Cosmic Isles Game Icon',
+        url: 'https://cosmic-isles.vercel.app/splash.png',
+        alt: 'Cosmic Isles Game',
       }
     ],
     locale: 'en_US',
@@ -25,7 +23,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: "Cosmic Isles",
     description: "A Farcaster Mini App adventure",
-    images: ['https://cosmic-isles.vercel.app/icon.png'],
+    images: ['https://cosmic-isles.vercel.app/splash.png'],
   },
   icons: {
     icon: '/icon.png',
