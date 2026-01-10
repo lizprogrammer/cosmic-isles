@@ -5,6 +5,7 @@ export default class RoomA extends Phaser.Scene {
   private player?: Phaser.GameObjects.Sprite;
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private guidebot?: Phaser.GameObjects.Sprite;
+  private stone?: Phaser.GameObjects.Sprite;
   private hasSpokenToGuide: boolean = false;
   private dialogText?: Phaser.GameObjects.Text;
 
@@ -22,23 +23,26 @@ export default class RoomA extends Phaser.Scene {
     // Background
     this.add.image(400, 300, "roomA");
 
-    // Create player character (using avatar from character creator)
-    this.player = this.add.sprite(100, 500, "guidebot") // Replace with player sprite
-      .setScale(0.8);
+    // Create player character
+    this.player = this.add.sprite(100, 500, "guidebot")
+      .setScale(0.8)
+      .setDepth(10);
 
     // Guidebot NPC
     this.guidebot = this.add.sprite(150, 300, "guidebot")
-      .setInteractive()
-      .setScale(1);
+      .setInteractive({ useHandCursor: true })
+      .setScale(1)
+      .setDepth(5);
 
     // Glowing stone (collectible)
-    const stone = this.add.sprite(600, 320, "stone")
-      .setInteractive()
-      .setScale(0.5);
+    this.stone = this.add.sprite(600, 320, "stone")
+      .setInteractive({ useHandCursor: true })
+      .setScale(0.5)
+      .setDepth(5);
 
     // Add glow effect to stone
     this.tweens.add({
-      targets: stone,
+      targets: this.stone,
       alpha: 0.6,
       scale: 0.55,
       duration: 1000,
@@ -53,7 +57,7 @@ export default class RoomA extends Phaser.Scene {
       backgroundColor: "#000000",
       padding: { x: 10, y: 10 },
       align: "center"
-    }).setOrigin(0.5).setVisible(false);
+    }).setOrigin(0.5).setVisible(false).setDepth(100);
 
     // Keyboard controls
     this.cursors = this.input.keyboard?.createCursorKeys();
@@ -62,30 +66,11 @@ export default class RoomA extends Phaser.Scene {
     this.add.text(400, 580, "Arrow keys or TAP to move • Click objects to interact", {
       fontSize: "14px",
       color: "#aaaaaa"
-    }).setOrigin(0.5);
-
-    // Touch/mobile controls - tap to move
-    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      if (!this.player) return;
-      
-      // Check if we're clicking an interactive object
-      const hitObjects = this.input.hitTestPointer(pointer);
-      const clickedInteractive = hitObjects.some((obj: any) => obj.input);
-      
-      // Only move if not clicking an interactive object
-      if (!clickedInteractive) {
-        this.tweens.add({
-          targets: this.player,
-          x: pointer.x,
-          y: Phaser.Math.Clamp(pointer.y, 50, 550),
-          duration: 500,
-          ease: 'Power2'
-        });
-      }
-    });
+    }).setOrigin(0.5).setDepth(100);
 
     // Guidebot interaction
-    this.guidebot.on("pointerdown", () => {
+    this.guidebot.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+      pointer.event.stopPropagation();
       if (!this.hasSpokenToGuide) {
         this.showDialog("Welcome to Island One! Find the glowing stone to continue.");
         this.hasSpokenToGuide = true;
@@ -95,20 +80,21 @@ export default class RoomA extends Phaser.Scene {
     });
 
     // Stone interaction
-    stone.on("pointerdown", () => {
-      if (this.isPlayerNear(stone)) {
+    this.stone.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+      pointer.event.stopPropagation();
+      if (this.isPlayerNear(this.stone!)) {
         playerState.hasStone = true;
         playerState.score += 10;
         playerState.itemsCollected.push("glowing_stone");
         
         // Collect animation
         this.tweens.add({
-          targets: stone,
-          y: stone.y - 50,
+          targets: this.stone,
+          y: this.stone!.y - 50,
           alpha: 0,
           duration: 500,
           onComplete: () => {
-            stone.destroy();
+            this.stone?.destroy();
             this.showDialog("Stone acquired! Proceeding to Island Two...");
             
             this.time.delayedCall(2000, () => {
@@ -120,31 +106,64 @@ export default class RoomA extends Phaser.Scene {
         this.showDialog("Get closer to collect the stone!");
       }
     });
+
+    // Touch/mobile controls - tap background to move
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (!this.player) return;
+      
+      // Check if clicking on an interactive game object
+      const objectsUnderPointer = this.input.hitTestPointer(pointer);
+      const clickedInteractive = objectsUnderPointer.some((obj: any) => {
+        return obj === this.guidebot || obj === this.stone;
+      });
+      
+      // Only move player if clicking empty space
+      if (!clickedInteractive) {
+        const targetX = Phaser.Math.Clamp(pointer.x, 50, 750);
+        const targetY = Phaser.Math.Clamp(pointer.y, 50, 550);
+        
+        this.tweens.add({
+          targets: this.player,
+          x: targetX,
+          y: targetY,
+          duration: 500,
+          ease: 'Power2'
+        });
+      }
+    });
   }
 
   update() {
     if (!this.player || !this.cursors) return;
 
-    const speed = 200;
+    const speed = 3;
 
     // Player movement with keyboard
+    let moving = false;
+    
     if (this.cursors.left?.isDown) {
-      this.player.x -= speed * (1/60);
+      this.player.x -= speed;
       this.player.setFlipX(true);
+      moving = true;
     } else if (this.cursors.right?.isDown) {
-      this.player.x += speed * (1/60);
+      this.player.x += speed;
       this.player.setFlipX(false);
+      moving = true;
     }
 
     if (this.cursors.up?.isDown) {
-      this.player.y -= speed * (1/60);
+      this.player.y -= speed;
+      moving = true;
     } else if (this.cursors.down?.isDown) {
-      this.player.y += speed * (1/60);
+      this.player.y += speed;
+      moving = true;
     }
 
     // Keep player in bounds
-    this.player.x = Phaser.Math.Clamp(this.player.x, 50, 750);
-    this.player.y = Phaser.Math.Clamp(this.player.y, 50, 550);
+    if (moving) {
+      this.player.x = Phaser.Math.Clamp(this.player.x, 50, 750);
+      this.player.y = Phaser.Math.Clamp(this.player.y, 50, 550);
+    }
   }
 
   private showDialog(message: string) {
