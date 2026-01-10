@@ -59,10 +59,30 @@ export default class RoomA extends Phaser.Scene {
     this.cursors = this.input.keyboard?.createCursorKeys();
 
     // Instructions
-    this.add.text(400, 580, "Arrow keys to move • Click objects to interact", {
+    this.add.text(400, 580, "Arrow keys or TAP to move • Click objects to interact", {
       fontSize: "14px",
       color: "#aaaaaa"
     }).setOrigin(0.5);
+
+    // Touch/mobile controls - tap to move
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (!this.player) return;
+      
+      // Check if we're clicking an interactive object
+      const hitObjects = this.input.hitTestPointer(pointer);
+      const clickedInteractive = hitObjects.some((obj: any) => obj.input);
+      
+      // Only move if not clicking an interactive object
+      if (!clickedInteractive) {
+        this.tweens.add({
+          targets: this.player,
+          x: pointer.x,
+          y: Phaser.Math.Clamp(pointer.y, 50, 550),
+          duration: 500,
+          ease: 'Power2'
+        });
+      }
+    });
 
     // Guidebot interaction
     this.guidebot.on("pointerdown", () => {
@@ -79,6 +99,7 @@ export default class RoomA extends Phaser.Scene {
       if (this.isPlayerNear(stone)) {
         playerState.hasStone = true;
         playerState.score += 10;
+        playerState.itemsCollected.push("glowing_stone");
         
         // Collect animation
         this.tweens.add({
@@ -106,7 +127,7 @@ export default class RoomA extends Phaser.Scene {
 
     const speed = 200;
 
-    // Player movement
+    // Player movement with keyboard
     if (this.cursors.left?.isDown) {
       this.player.x -= speed * (1/60);
       this.player.setFlipX(true);
