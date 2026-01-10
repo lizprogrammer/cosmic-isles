@@ -12,10 +12,18 @@ export const config: Phaser.Types.Core.GameConfig = {
   height: 600,
   backgroundColor: '#000000',
   scale: {
-    mode: Phaser.Scale.RESIZE,
+    mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
-    width: '100%',
-    height: '100%'
+    width: 800,
+    height: 600,
+    min: {
+      width: 320,
+      height: 240
+    },
+    max: {
+      width: 1920,
+      height: 1440
+    }
   },
   scene: [Boot, AvatarCreator, RoomA, RoomB, RoomC]
 }
