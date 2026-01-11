@@ -9,14 +9,18 @@ export default function GameClientPage() {
   useEffect(() => {
     setMounted(true)
     
-    // Load Farcaster SDK module
-    if (typeof window !== 'undefined') {
-      const script = document.createElement('script');
-      script.type = 'module';
-      script.src = '/farcaster-init.js';
-      document.head.appendChild(script);
-      console.log('Loading Farcaster SDK module...');
-    }
+    // Call Farcaster ready using the installed npm package
+    const callReady = async () => {
+      try {
+        const sdk = (await import("@farcaster/frame-sdk")).default;
+        await sdk.actions.ready();
+        console.log('✅ Farcaster SDK ready called!');
+      } catch (error) {
+        console.error('❌ SDK ready error:', error);
+      }
+    };
+    
+    callReady();
   }, [])
 
   useEffect(() => {
@@ -24,18 +28,10 @@ export default function GameClientPage() {
     
     const initGame = async () => {
       try {
-        // Wait for SDK to be ready (max 3 seconds)
-        let attempts = 0;
-        while (!(window as any).farcasterReady && attempts < 30) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          attempts++;
-        }
+        // Small delay to ensure SDK finished calling ready
+        await new Promise(resolve => setTimeout(resolve, 200));
         
-        if ((window as any).farcasterReady) {
-          console.log("✅ SDK ready, initializing game...");
-        } else {
-          console.warn("⚠️ SDK not ready after 3s, starting game anyway...");
-        }
+        console.log("Initializing game...");
         
         // Load Phaser
         const Phaser = await import("phaser")
