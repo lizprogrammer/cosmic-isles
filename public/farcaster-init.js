@@ -1,4 +1,4 @@
-import sdk from 'https://esm.sh/@farcaster/frame-sdk@0.1.0?bundle';
+import sdk from 'https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk@0.1.0/+esm';
 
 (async () => {
   try {
