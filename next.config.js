@@ -2,22 +2,37 @@
 const nextConfig = {
   reactStrictMode: true,
 
-  // We don’t want Next.js to try to SSR Phaser or your game code.
-  // Everything in /public is served as static files.
+  // Fix Phaser + browser-only build
   webpack: (config) => {
     config.resolve.fallback = {
       fs: false,
       path: false,
       crypto: false
     };
-
     return config;
   },
 
-  // Allow importing TS/JS from /src/game even though it runs client‑side only.
+  // Allow importing TS/JS from /src/game
   experimental: {
     esmExternals: "loose"
-  }
+  },
+
+  async redirects() {
+    return [
+      {
+        source: '/:path((?!another-page$).*)',
+        has: [{ type: 'header', key: 'x-redirect-me' }],
+        permanent: false,
+        destination: '/another-page',
+      },
+      {
+        source: '/:path((?!another-page$).*)',
+        missing: [{ type: 'header', key: 'x-do-not-redirect' }],
+        permanent: false,
+        destination: '/another-page',
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;
