@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import GameClientPage from "./client-page"
 
 export const dynamic = "force-dynamic"
+export const revalidate = 0
 
 // Frame metadata (required for embed)
 export const metadata: Metadata = {
@@ -15,6 +16,9 @@ export const metadata: Metadata = {
 }
 
 export default function GamePage() {
+  // Prevent tree-shaking and ensure server wrapper runs
+  console.log("SERVER WRAPPER LOADED")
+
   // Call ready as early as possible (before hydration)
   Promise.resolve().then(async () => {
     try {
@@ -26,5 +30,9 @@ export default function GamePage() {
     }
   })
 
-  return <GameClientPage />
+  return (
+    <div>
+      <GameClientPage />
+    </div>
+  )
 }
