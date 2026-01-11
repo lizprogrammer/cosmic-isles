@@ -1,6 +1,9 @@
 import type { Metadata } from "next"
 import GameClientPage from "./client-page"
 
+export const dynamic = "force-dynamic"
+
+// Frame metadata (required for embed)
 export const metadata: Metadata = {
   other: {
     "fc:frame": "vNext",
@@ -12,5 +15,16 @@ export const metadata: Metadata = {
 }
 
 export default function GamePage() {
+  // Call ready as early as possible (before hydration)
+  Promise.resolve().then(async () => {
+    try {
+      const { sdk } = await import("@farcaster/frame-sdk")
+      await sdk.actions.ready()
+      console.log("SDK ready called from server wrapper")
+    } catch (err) {
+      console.error("SDK ready failed in server wrapper", err)
+    }
+  })
+
   return <GameClientPage />
 }
