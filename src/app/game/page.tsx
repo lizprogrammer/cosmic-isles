@@ -10,7 +10,8 @@ export const metadata: Metadata = {
     "fc:frame:image": "https://cosmic-isles.vercel.app/splash.png",
     "fc:frame:button:1": "Play Game",
     "fc:frame:button:1:action": "link",
-    "fc:frame:button:1:target": "https://cosmic-isles.vercel.app/game",
+    // FIX: avoid self-referential loop
+    "fc:frame:button:1:target": "https://cosmic-isles.vercel.app/",
   },
 
   // Stop inheriting homepage OG/Twitter on /game
