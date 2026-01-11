@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import GameClientPage from "./client/page"
+import GameClientPage from "./client-page"
 
 export const metadata: Metadata = {
   other: {
