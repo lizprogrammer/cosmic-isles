@@ -12,7 +12,22 @@ export const metadata: Metadata = {
     "fc:frame:button:1": "Play Game",
     "fc:frame:button:1:action": "link",
     "fc:frame:button:1:target": "https://cosmic-isles.vercel.app/game",
-  }
+  },
+
+  // IMPORTANT: override inherited OG/Twitter metadata
+  // so /game is treated as a frame, not as the homepage.
+  openGraph: {
+    title: "",
+    description: "",
+    url: "",
+    images: [],
+  },
+  twitter: {
+    card: "",
+    title: "",
+    description: "",
+    images: [],
+  },
 }
 
 export default function GamePage() {
