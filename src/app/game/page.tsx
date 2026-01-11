@@ -3,6 +3,9 @@ import GameClientPage from "./client-page"
 export const dynamic = "force-dynamic"
 export const revalidate = 0
 
+// Force this route to remain a server component 
+export const metadata = {}
+
 export default function GamePage() {
   console.log("SERVER WRAPPER LOADED")
 
