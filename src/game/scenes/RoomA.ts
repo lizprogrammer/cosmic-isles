@@ -10,8 +10,8 @@ export default class RoomA extends Phaser.Scene {
   private dialogText?: Phaser.GameObjects.Text;
   private background?: Phaser.GameObjects.Image;
 
-  constructor() { 
-    super("RoomA"); 
+  constructor() {
+    super("RoomA");
   }
 
   preload() {
@@ -21,12 +21,20 @@ export default class RoomA extends Phaser.Scene {
   }
 
   create() {
-    // Background - make it interactive for tap-to-move
+    // Allow multi-touch + reliable mobile taps
+    this.input.addPointer(2);
+
+    // Background
     this.background = this.add.image(400, 300, "roomA")
-      .setInteractive()
       .setDepth(0);
 
-    // Create player character
+    // Make entire background tappable on mobile
+    this.background.setInteractive(
+      new Phaser.Geom.Rectangle(0, 0, 800, 600),
+      Phaser.Geom.Rectangle.Contains
+    );
+
+    // Player character
     this.player = this.add.sprite(100, 500, "guidebot")
       .setScale(0.8)
       .setDepth(10);
@@ -37,13 +45,13 @@ export default class RoomA extends Phaser.Scene {
       .setScale(1)
       .setDepth(5);
 
-    // Glowing stone (collectible)
+    // Glowing stone
     this.stone = this.add.sprite(600, 320, "stone")
       .setInteractive()
       .setScale(0.5)
       .setDepth(5);
 
-    // Add glow effect to stone
+    // Glow animation
     this.tweens.add({
       targets: this.stone,
       alpha: 0.6,
@@ -53,7 +61,7 @@ export default class RoomA extends Phaser.Scene {
       repeat: -1
     });
 
-    // Dialog text box
+    // Dialog text
     this.dialogText = this.add.text(400, 50, "", {
       fontSize: "18px",
       color: "#ffffff",
@@ -71,19 +79,19 @@ export default class RoomA extends Phaser.Scene {
       color: "#aaaaaa"
     }).setOrigin(0.5).setDepth(100);
 
-    // Background tap to move
-    this.background.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+    // TAP‑TO‑MOVE (mobile fix)
+    this.background.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
       if (!this.player) return;
-      
+
       const targetX = Phaser.Math.Clamp(pointer.x, 50, 750);
       const targetY = Phaser.Math.Clamp(pointer.y, 50, 550);
-      
+
       this.tweens.add({
         targets: this.player,
         x: targetX,
         y: targetY,
         duration: 500,
-        ease: 'Power2'
+        ease: "Power2"
       });
     });
 
@@ -103,8 +111,7 @@ export default class RoomA extends Phaser.Scene {
         playerState.hasStone = true;
         playerState.score += 10;
         playerState.itemsCollected.push("glowing_stone");
-        
-        // Collect animation
+
         this.tweens.add({
           targets: this.stone,
           y: this.stone!.y - 50,
@@ -113,7 +120,7 @@ export default class RoomA extends Phaser.Scene {
           onComplete: () => {
             this.stone?.destroy();
             this.showDialog("Stone acquired! Proceeding to Island Two...");
-            
+
             this.time.delayedCall(2000, () => {
               this.scene.start("RoomB");
             });
@@ -129,10 +136,9 @@ export default class RoomA extends Phaser.Scene {
     if (!this.player || !this.cursors) return;
 
     const speed = 3;
-
-    // Player movement with keyboard
     let moving = false;
-    
+
+    // Keyboard movement
     if (this.cursors.left?.isDown) {
       this.player.x -= speed;
       this.player.setFlipX(true);
@@ -160,11 +166,10 @@ export default class RoomA extends Phaser.Scene {
 
   private showDialog(message: string) {
     if (!this.dialogText) return;
-    
+
     this.dialogText.setText(message);
     this.dialogText.setVisible(true);
 
-    // Auto-hide after 3 seconds
     this.time.delayedCall(3000, () => {
       this.dialogText?.setVisible(false);
     });
@@ -172,14 +177,14 @@ export default class RoomA extends Phaser.Scene {
 
   private isPlayerNear(target: Phaser.GameObjects.Sprite): boolean {
     if (!this.player) return false;
-    
+
     const distance = Phaser.Math.Distance.Between(
-      this.player.x, 
+      this.player.x,
       this.player.y,
       target.x,
       target.y
     );
-    
+
     return distance < 100;
   }
 }
