@@ -35,7 +35,7 @@ export default function GameClientPage() {
         
         // Load Phaser
         const Phaser = await import("phaser")
-        const { config } = await import("../../../game/config")
+        const { config } = await import("../../game/config")
         
         const game = new Phaser.Game(config)
         console.log("🎮 Game initialized!");
