@@ -1,6 +1,5 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import Script from 'next/script'
 
 export const metadata: Metadata = {
   title: "Cosmic Isles",
@@ -44,10 +43,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
-        <Script
-          src="https://esm.sh/@farcaster/frame-sdk"
-          strategy="beforeInteractive"
-        />
         <link 
           rel="manifest" 
           href="https://api.farcaster.xyz/miniapps/hosted-manifest/019baa46-22b9-d5c5-be37-a3f72b063671"
