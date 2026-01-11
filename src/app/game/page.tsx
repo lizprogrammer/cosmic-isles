@@ -4,7 +4,6 @@ import GameClientPage from "./client-page"
 export const dynamic = "force-dynamic"
 export const revalidate = 0
 
-// Frame metadata (required for embed)
 export const metadata: Metadata = {
   other: {
     "fc:frame": "vNext",
@@ -14,27 +13,24 @@ export const metadata: Metadata = {
     "fc:frame:button:1:target": "https://cosmic-isles.vercel.app/game",
   },
 
-  // IMPORTANT: override inherited OG/Twitter metadata
-  // so /game is treated as a frame, not as the homepage.
+  // Override inherited OG/Twitter metadata safely
   openGraph: {
-    title: "",
-    description: "",
-    url: "",
-    images: [],
+    title: undefined,
+    description: undefined,
+    url: undefined,
+    images: undefined,
   },
   twitter: {
-    card: "",
-    title: "",
-    description: "",
-    images: [],
+    card: undefined,
+    title: undefined,
+    description: undefined,
+    images: undefined,
   },
 }
 
 export default function GamePage() {
-  // Prevent tree-shaking and ensure server wrapper runs
   console.log("SERVER WRAPPER LOADED")
 
-  // Call ready as early as possible (before hydration)
   Promise.resolve().then(async () => {
     try {
       const { sdk } = await import("@farcaster/frame-sdk")
