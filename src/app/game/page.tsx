@@ -2,8 +2,10 @@ import GameClientPage from "./client-page"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
+export const fetchCache = "force-no-store"
+export const runtime = "nodejs"
 
-// Force this route to remain a server component 
+// Force this route to remain a server component
 export const metadata = {}
 
 export default function GamePage() {
