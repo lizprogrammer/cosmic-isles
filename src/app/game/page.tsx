@@ -5,15 +5,16 @@ export const dynamic = "force-dynamic"
 export const revalidate = 0
 
 export const metadata: Metadata = {
+  // FRAME METADATA — forces Next.js to emit property="fc:frame"
   other: {
-    "fc:frame": "vNext",
-    "fc:frame:image": "https://cosmic-isles.vercel.app/splash.png",
-    "fc:frame:button:1": "Play Game",
-    "fc:frame:button:1:action": "link",
-    "fc:frame:button:1:target": "https://cosmic-isles.vercel.app/game",
+    "fc:frame": { value: "vNext" },
+    "fc:frame:image": { value: "https://cosmic-isles.vercel.app/splash.png" },
+    "fc:frame:button:1": { value: "Play Game" },
+    "fc:frame:button:1:action": { value: "link" },
+    "fc:frame:button:1:target": { value: "https://cosmic-isles.vercel.app/game" },
   },
 
-  // Override inherited OG/Twitter metadata safely
+  // OVERRIDE inherited OG/Twitter metadata so /game is treated as a frame
   openGraph: {
     title: undefined,
     description: undefined,
@@ -29,8 +30,10 @@ export const metadata: Metadata = {
 }
 
 export default function GamePage() {
+  // Prevent tree-shaking and ensure server wrapper runs
   console.log("SERVER WRAPPER LOADED")
 
+  // Call ready as early as possible (before hydration)
   Promise.resolve().then(async () => {
     try {
       const { sdk } = await import("@farcaster/frame-sdk")
