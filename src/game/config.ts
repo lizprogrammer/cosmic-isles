@@ -11,6 +11,14 @@ export const config: Phaser.Types.Core.GameConfig = {
   width: 800,
   height: 600,
   backgroundColor: '#000000',
+
+  // ⭐ Mobile input fix
+  input: {
+    activePointers: 3,   // allow multi-touch
+    touch: true,         // enable touch input
+    mouse: true          // keep mouse enabled for desktop
+  },
+
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -25,5 +33,6 @@ export const config: Phaser.Types.Core.GameConfig = {
       height: 1440
     }
   },
+
   scene: [Boot, AvatarCreator, RoomA, RoomB, RoomC]
 }
