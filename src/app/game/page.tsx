@@ -5,14 +5,15 @@ export const dynamic = "force-dynamic"
 export const revalidate = 0
 
 export const metadata: Metadata = {
-  other: [
-    { property: "fc:frame", content: "vNext" },
-    { property: "fc:frame:image", content: "https://cosmic-isles.vercel.app/splash.png" },
-    { property: "fc:frame:button:1", content: "Play Game" },
-    { property: "fc:frame:button:1:action", content: "link" },
-    { property: "fc:frame:button:1:target", content: "https://cosmic-isles.vercel.app/game" },
-  ],
+  other: {
+    "fc:frame": "vNext",
+    "fc:frame:image": "https://cosmic-isles.vercel.app/splash.png",
+    "fc:frame:button:1": "Play Game",
+    "fc:frame:button:1:action": "link",
+    "fc:frame:button:1:target": "https://cosmic-isles.vercel.app/game",
+  },
 
+  // Stop inheriting homepage OG/Twitter on /game
   openGraph: {
     title: undefined,
     description: undefined,
