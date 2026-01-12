@@ -374,7 +374,10 @@ export default class Island3 extends Phaser.Scene {
   }
 
   private setupTouchControls() {
-    const touchZone = this.add.zone(GAME_CONFIG.WIDTH / 2, GAME_CONFIG.HEIGHT / 2, GAME_CONFIG.WIDTH, GAME_CONFIG.HEIGHT).setInteractive().setDepth(-1);
+    const width = this.scale.width;
+    const height = this.scale.height;
+    const touchZone = this.add.zone(width / 2, height / 2, width, height).setInteractive().setDepth(-1);
+    
     touchZone.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       this.pointerStartPos = { x: pointer.worldX, y: pointer.worldY };
     });
@@ -408,8 +411,9 @@ export default class Island3 extends Phaser.Scene {
     }
 
     if (moving) {
-      this.player.x = Phaser.Math.Clamp(this.player.x, GAME_CONFIG.PLAYER_BOUNDS.MIN_X, GAME_CONFIG.PLAYER_BOUNDS.MAX_X);
-      this.player.y = Phaser.Math.Clamp(this.player.y, GAME_CONFIG.PLAYER_BOUNDS.MIN_Y, GAME_CONFIG.PLAYER_BOUNDS.MAX_Y);
+      const margin = 50;
+      this.player.x = Phaser.Math.Clamp(this.player.x, margin, this.scale.width - margin);
+      this.player.y = Phaser.Math.Clamp(this.player.y, margin, this.scale.height - margin);
       
       // Prevent walking on top of NPC
       if (this.currentNpc) {

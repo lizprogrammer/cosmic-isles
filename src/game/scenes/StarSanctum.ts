@@ -32,13 +32,18 @@ export default class StarSanctum extends Phaser.Scene {
     console.log('⭐ Star Sanctum - Meta Quest Complete!');
     ensurePixelTexture(this);
 
+    const width = this.scale.width;
+    const height = this.scale.height;
+    const cx = width / 2;
+    const cy = height / 2;
+
     // Dark mystical background (Procedural)
-    this.add.image(400, 300, 'terrain-sanctum').setDepth(0);
+    this.add.image(cx, cy, 'terrain-sanctum').setDepth(0).setDisplaySize(width, height);
     
     // Add some cosmic particles
     const particles = this.add.particles(0, 0, 'pixel', {
-      x: { min: 0, max: 800 },
-      y: { min: 0, max: 600 },
+      x: { min: 0, max: width },
+      y: { min: 0, max: height },
       speed: { min: 5, max: 20 },
       scale: { start: 1, end: 0 },
       alpha: { start: 1, end: 0 },
@@ -52,7 +57,7 @@ export default class StarSanctum extends Phaser.Scene {
     this.dialogueManager = new DialogueManager(this);
 
     // Show title
-    const title = this.add.text(400, 50, '⭐ THE STAR SANCTUM ⭐', {
+    const title = this.add.text(cx, height * 0.1, '⭐ THE STAR SANCTUM ⭐', {
       fontSize: '36px',
       color: '#FFD700',
       fontFamily: 'Arial, sans-serif',
@@ -68,20 +73,24 @@ export default class StarSanctum extends Phaser.Scene {
   }
 
   private createStarFragments(): void {
+    const width = this.scale.width;
+    const height = this.scale.height;
+    
     const fragmentPositions = [
-      { x: 200, y: 200, color: ISLANDS.ISLAND_1.color },
-      { x: 600, y: 200, color: ISLANDS.ISLAND_2.color },
-      { x: 150, y: 400, color: ISLANDS.ISLAND_3.color },
-      { x: 650, y: 400, color: ISLANDS.ISLAND_4.color },
-      { x: 400, y: 500, color: ISLANDS.ISLAND_5.color }
+      { x: width * 0.25, y: height * 0.3, color: ISLANDS.ISLAND_1.color },
+      { x: width * 0.75, y: height * 0.3, color: ISLANDS.ISLAND_2.color },
+      { x: width * 0.2, y: height * 0.7, color: ISLANDS.ISLAND_3.color },
+      { x: width * 0.8, y: height * 0.7, color: ISLANDS.ISLAND_4.color },
+      { x: width * 0.5, y: height * 0.85, color: ISLANDS.ISLAND_5.color }
     ];
 
     fragmentPositions.forEach((data) => {
       const fragment = this.add.graphics();
       fragment.fillStyle(data.color, 1);
-      fragment.fillCircle(data.x, data.y, 30);
+      fragment.fillCircle(0, 0, 30); // Draw at 0,0 relative to object
+      fragment.setPosition(data.x, data.y);
       fragment.lineStyle(2, 0xffffff, 1);
-      fragment.strokeCircle(data.x, data.y, 30);
+      fragment.strokeCircle(0, 0, 30);
       fragment.setDepth(10);
       this.starFragments.push(fragment);
 
@@ -97,14 +106,17 @@ export default class StarSanctum extends Phaser.Scene {
   }
 
   private animateStarReformation(): void {
+    const cx = this.scale.width / 2;
+    const cy = this.scale.height / 2;
+
     this.dialogueManager.show('The star fragments resonate with cosmic energy...', 3000);
 
     // Move all fragments to center
     this.starFragments.forEach((fragment, index) => {
       this.tweens.add({
         targets: fragment,
-        x: 400,
-        y: 300,
+        x: cx,
+        y: cy,
         duration: 2000,
         delay: index * 200,
         ease: 'Power2',
@@ -118,11 +130,15 @@ export default class StarSanctum extends Phaser.Scene {
   }
 
   private createReformedStar(): void {
+    const cx = this.scale.width / 2;
+    const cy = this.scale.height / 2;
+
     // Hide fragments
     this.starFragments.forEach(f => f.setVisible(false));
 
     // Create magnificent reformed star
     this.reformedStar = this.add.graphics();
+    this.reformedStar.setPosition(cx, cy); // Use position
     this.reformedStar.setDepth(20);
 
     // Multi-layered star
@@ -137,12 +153,12 @@ export default class StarSanctum extends Phaser.Scene {
     colors.forEach((color, index) => {
       const size = 80 - (index * 10);
       this.reformedStar!.fillStyle(color, 0.8);
-      this.reformedStar!.fillCircle(400, 300, size);
+      this.reformedStar!.fillCircle(0, 0, size);
     });
 
     // Add white core
     this.reformedStar.fillStyle(0xffffff, 1);
-    this.reformedStar.fillCircle(400, 300, 20);
+    this.reformedStar.fillCircle(0, 0, 20);
 
     // Glow effect
     this.tweens.add({
@@ -157,7 +173,7 @@ export default class StarSanctum extends Phaser.Scene {
     });
 
     // Particle burst
-    const particles = this.add.particles(400, 300, 'pixel', {
+    const particles = this.add.particles(cx, cy, 'pixel', {
       speed: { min: 50, max: 200 },
       scale: { start: 3, end: 0 },
       alpha: { start: 1, end: 0 },
@@ -172,13 +188,17 @@ export default class StarSanctum extends Phaser.Scene {
   }
 
   private showCompletionMessage(): void {
+    const cx = this.scale.width / 2;
+    const cy = this.scale.height / 2;
+    const height = this.scale.height;
+
     this.dialogueManager.show('🌟 THE SHATTERED STAR HAS BEEN REFORGED! 🌟', 4000);
 
     // Show completion stats
     const playTime = getTotalPlayTime();
     const badges = questState.getBadgeCount();
 
-    const statsText = this.add.text(400, 450, 
+    const statsText = this.add.text(cx, height * 0.75, 
       `Journey Complete!\n` +
       `Badges Earned: ${badges}/5\n` +
       `Time: ${playTime} minutes\n` +
@@ -201,7 +221,7 @@ export default class StarSanctum extends Phaser.Scene {
     });
 
     // Mint button
-    const mintButton = this.add.text(400, 550, '✨ Mint Your Achievement NFT ✨', {
+    const mintButton = this.add.text(cx, height * 0.9, '✨ Mint Your Achievement NFT ✨', {
       fontSize: '24px',
       color: '#FFD700',
       fontFamily: 'Arial, sans-serif',
