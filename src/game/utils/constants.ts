@@ -2,7 +2,7 @@
 export const GAME_CONFIG = {
   WIDTH: 1280,
   HEIGHT: 720,
-  PLAYER_SPEED: 4, // Increased speed for larger screen
+  PLAYER_SPEED: 8, // Increased speed for larger screen
   PLAYER_BOUNDS: {
     MIN_X: 50,
     MAX_X: 1230,

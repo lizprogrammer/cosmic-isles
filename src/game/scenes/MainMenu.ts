@@ -19,19 +19,19 @@ export default class MainMenu extends Phaser.Scene {
   create() {
     console.log('🌌 Cosmic Isles - Main Menu');
 
-    const cx = GAME_CONFIG.WIDTH / 2;
-    const cy = GAME_CONFIG.HEIGHT / 2;
+    const cx = this.scale.width / 2;
+    const cy = this.scale.height / 2;
 
     // Background - Cover Screen with correct aspect ratio
     const bg = this.add.image(cx, cy, 'splash');
-    const scaleX = GAME_CONFIG.WIDTH / bg.width;
-    const scaleY = GAME_CONFIG.HEIGHT / bg.height;
+    const scaleX = this.scale.width / bg.width;
+    const scaleY = this.scale.height / bg.height;
     const scale = Math.max(scaleX, scaleY);
     bg.setScale(scale).setScrollFactor(0);
     bg.setAlpha(0.6);
 
     // Dark overlay
-    this.add.rectangle(cx, cy, GAME_CONFIG.WIDTH, GAME_CONFIG.HEIGHT, 0x000000, 0.5);
+    this.add.rectangle(cx, cy, this.scale.width, this.scale.height, 0x000000, 0.5);
 
     // Title
     const title = this.add.text(cx, cy - 150, '🌌 COSMIC ISLES 🌌', {
@@ -47,7 +47,7 @@ export default class MainMenu extends Phaser.Scene {
       color: '#ffffff',
       fontFamily: 'Arial, sans-serif',
       align: 'center',
-      wordWrap: { width: 800 }
+      wordWrap: { width: this.scale.width * 0.7 }
     }).setOrigin(0.5);
 
     // Check for saved progress
@@ -84,7 +84,7 @@ export default class MainMenu extends Phaser.Scene {
     }
 
     // Credits
-    this.add.text(cx, GAME_CONFIG.HEIGHT - 40, 'A Farcaster Mini App • Built with Phaser', {
+    this.add.text(cx, this.scale.height - 40, 'A Farcaster Mini App • Built with Phaser', {
       fontSize: '16px',
       color: '#888888',
       fontFamily: 'Arial, sans-serif'
@@ -155,11 +155,11 @@ export default class MainMenu extends Phaser.Scene {
   }
 
   private showConfirmReset(): void {
-    const cx = GAME_CONFIG.WIDTH / 2;
-    const cy = GAME_CONFIG.HEIGHT / 2;
+    const cx = this.scale.width / 2;
+    const cy = this.scale.height / 2;
 
     // Confirmation overlay
-    const overlay = this.add.rectangle(cx, cy, GAME_CONFIG.WIDTH, GAME_CONFIG.HEIGHT, 0x000000, 0.8).setDepth(100);
+    const overlay = this.add.rectangle(cx, cy, this.scale.width, this.scale.height, 0x000000, 0.8).setDepth(100);
     
     const confirmText = this.add.text(cx, cy - 50, 
       'Start a new game?\n\nThis will erase your current progress.',

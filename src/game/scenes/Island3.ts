@@ -65,7 +65,7 @@ export default class Island3 extends Phaser.Scene {
     console.log('🌳 Island 3: Started (3-Room Layout)');
     this.input.addPointer(2);
 
-    this.player = new Player(this, 100, 500);
+    this.player = new Player(this, 100, this.scale.height * 0.7);
     this.setupTouchControls();
     this.cursors = this.input.keyboard?.createCursorKeys();
 
@@ -73,15 +73,26 @@ export default class Island3 extends Phaser.Scene {
     this.progressUI = new ProgressUI(this);
     this.progressUI.update();
     
-    // UI Removed
-    // this.tutorial = new TutorialOverlay(this);
-    // this.instructionPanel = new InstructionPanel(this);
-
     this.setupRoom(1);
+    
+    this.scale.on('resize', this.handleResize, this);
+  }
+
+  private handleResize(gameSize: Phaser.Structs.Size) {
+    if (this.currentBg) {
+      this.currentBg.setPosition(gameSize.width / 2, gameSize.height / 2);
+      const scaleX = gameSize.width / this.currentBg.width;
+      const scaleY = gameSize.height / this.currentBg.height;
+      const scale = Math.max(scaleX, scaleY);
+      this.currentBg.setScale(scale).setScrollFactor(0);
+    }
+    this.setupRoom(this.currentRoom);
   }
 
   private setupRoom(roomNum: number) {
     this.currentRoom = roomNum;
+    const width = this.scale.width;
+    const height = this.scale.height;
     
     this.currentBg?.destroy();
     this.currentNpc?.destroy();
@@ -90,10 +101,9 @@ export default class Island3 extends Phaser.Scene {
     if (this.exitObject) this.exitObject.destroy();
 
     if (roomNum === 1) {
-      this.currentBg = this.add.image(GAME_CONFIG.WIDTH / 2, GAME_CONFIG.HEIGHT / 2, ASSETS.BG_ROOM_A).setDepth(0);
-      this.currentBg.setDisplaySize(GAME_CONFIG.WIDTH + 4, GAME_CONFIG.HEIGHT + 4);
-
-      this.currentNpc = this.add.sprite(GAME_CONFIG.WIDTH * 0.25, GAME_CONFIG.HEIGHT * 0.75, ASSETS.NPC_GUIDEBOT).setScale(0.35).setDepth(20);
+      this.currentBg = this.add.image(width / 2, height / 2, ASSETS.BG_ROOM_A).setDepth(0);
+      
+      this.currentNpc = this.add.sprite(width * 0.25, height * 0.75, ASSETS.NPC_GUIDEBOT).setScale(0.35).setDepth(20);
       
       this.currentNpc.setInteractive().on('pointerdown', () => {
         if (this.player) {
@@ -145,7 +155,7 @@ export default class Island3 extends Phaser.Scene {
         this.createQuestItem();
       }
 
-      this.exitObject = this.add.zone(GAME_CONFIG.WIDTH * 0.85, GAME_CONFIG.HEIGHT * 0.6, 200, 300).setInteractive();
+      this.exitObject = this.add.zone(width * 0.85, height * 0.6, 200, 300).setInteractive();
       this.exitObject.on('pointerdown', () => {
         if (this.hasCollectedItem) {
           this.setupRoom(2);
@@ -154,8 +164,6 @@ export default class Island3 extends Phaser.Scene {
         }
       });
 
-      // this.instructionPanel.update(QUEST_DATA[3].name, "Find the Song Seed", "Room 1/3");
-
       if (!this.hasCollectedItem) {
         this.time.delayedCall(500, () => {
           this.dialogueManager.showAnnouncement("QUEST STARTED:\nFIND THE SONG SEED");
@@ -163,10 +171,9 @@ export default class Island3 extends Phaser.Scene {
       }
 
     } else if (roomNum === 2) {
-      this.currentBg = this.add.image(GAME_CONFIG.WIDTH / 2, GAME_CONFIG.HEIGHT / 2, ASSETS.BG_ROOM_B).setDepth(0);
-      this.currentBg.setDisplaySize(GAME_CONFIG.WIDTH + 4, GAME_CONFIG.HEIGHT + 4);
-
-      this.currentNpc = this.add.sprite(GAME_CONFIG.WIDTH * 0.75, GAME_CONFIG.HEIGHT * 0.75, ASSETS.NPC_VILLAGER).setScale(0.35).setDepth(20);
+      this.currentBg = this.add.image(width / 2, height / 2, ASSETS.BG_ROOM_B).setDepth(0);
+      
+      this.currentNpc = this.add.sprite(width * 0.75, height * 0.75, ASSETS.NPC_VILLAGER).setScale(0.35).setDepth(20);
       
       this.time.delayedCall(500, () => {
         this.currentBubble = new SpeechBubble(
@@ -205,8 +212,8 @@ export default class Island3 extends Phaser.Scene {
                   if (this.currentBubble) this.currentBubble.destroy();
                   this.tweens.add({
                     targets: this.player!.container,
-                    x: GAME_CONFIG.WIDTH * 0.5,
-                    y: GAME_CONFIG.HEIGHT * 0.6,
+                    x: width * 0.5,
+                    y: height * 0.6,
                     duration: 1500,
                     onComplete: () => {
                       this.dialogueManager.show(DIALOGUES.VILLAGER_UNLOCK);
@@ -254,16 +261,13 @@ export default class Island3 extends Phaser.Scene {
       
       this.currentNpc.setInteractive().on('pointerdown', handleUnlock);
 
-      this.currentObject = this.add.zone(GAME_CONFIG.WIDTH * 0.5, GAME_CONFIG.HEIGHT * 0.6, 200, 300).setInteractive();
+      this.currentObject = this.add.zone(width * 0.5, height * 0.6, 200, 300).setInteractive();
       this.currentObject.on('pointerdown', handleUnlock);
 
-      // this.instructionPanel.update(QUEST_DATA[3].name, "Unlock the Door", "Room 2/3");
-
     } else if (roomNum === 3) {
-      this.currentBg = this.add.image(GAME_CONFIG.WIDTH / 2, GAME_CONFIG.HEIGHT / 2, ASSETS.BG_ROOM_C).setDepth(0);
-      this.currentBg.setDisplaySize(GAME_CONFIG.WIDTH + 4, GAME_CONFIG.HEIGHT + 4);
-
-      this.currentNpc = this.add.sprite(GAME_CONFIG.WIDTH * 0.75, GAME_CONFIG.HEIGHT * 0.75, ASSETS.NPC_SAGE).setScale(0.35).setDepth(20);
+      this.currentBg = this.add.image(width / 2, height / 2, ASSETS.BG_ROOM_C).setDepth(0);
+      
+      this.currentNpc = this.add.sprite(width * 0.75, height * 0.75, ASSETS.NPC_SAGE).setScale(0.35).setDepth(20);
       
       this.currentNpc.setInteractive().on('pointerdown', () => {
         if (this.player) {
@@ -303,20 +307,24 @@ export default class Island3 extends Phaser.Scene {
         );
       });
 
-      this.currentObject = this.add.zone(GAME_CONFIG.WIDTH * 0.5, GAME_CONFIG.HEIGHT * 0.5, 600, 600)
+      this.currentObject = this.add.zone(width * 0.5, height * 0.5, 600, 600)
         .setDepth(100)
         .setInteractive();
         
       this.currentObject.on('pointerdown', () => {
         this.completeQuest();
       });
-
-      // this.instructionPanel.update(QUEST_DATA[3].name, "Enter the Sanctuary", "Room 3/3");
     }
 
-    // Reposition Player to start
+    if (this.currentBg) {
+        const scaleX = width / this.currentBg.width;
+        const scaleY = height / this.currentBg.height;
+        const scale = Math.max(scaleX, scaleY);
+        this.currentBg.setScale(scale).setScrollFactor(0);
+    }
+    
     this.player!.x = 100;
-    this.player!.y = 500;
+    this.player!.y = height * 0.7;
     this.player!.container.setDepth(30);
   }
 
@@ -324,7 +332,7 @@ export default class Island3 extends Phaser.Scene {
     const itemKey = QUEST_DATA[3].room1Object;
     const item = new VisualCollectible(
       this, 
-      GAME_CONFIG.WIDTH * 0.5, GAME_CONFIG.HEIGHT * 0.6, 
+      this.scale.width * 0.5, this.scale.height * 0.6, 
       itemKey, 
       'quest_item', 
       'item_3', 

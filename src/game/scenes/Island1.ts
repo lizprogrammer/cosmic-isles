@@ -69,7 +69,7 @@ export default class Island1 extends Phaser.Scene {
     this.input.addPointer(2);
 
     // Setup Player & Controls
-    this.player = new Player(this, 100, 500);
+    this.player = new Player(this, 100, this.scale.height * 0.7);
     this.setupTouchControls();
     this.cursors = this.input.keyboard?.createCursorKeys();
 
@@ -78,17 +78,37 @@ export default class Island1 extends Phaser.Scene {
     this.progressUI = new ProgressUI(this);
     this.progressUI.update();
     
-    // UI elements removed as per request
-    // this.tutorial = new TutorialOverlay(this);
-    // this.instructionPanel = new InstructionPanel(this);
-
     // Initial Setup
     this.setupRoom(1);
+
+    // Handle Resize
+    this.scale.on('resize', this.handleResize, this);
+  }
+
+  private handleResize(gameSize: Phaser.Structs.Size) {
+    if (this.currentBg) {
+      this.currentBg.setPosition(gameSize.width / 2, gameSize.height / 2);
+      const scaleX = gameSize.width / this.currentBg.width;
+      const scaleY = gameSize.height / this.currentBg.height;
+      const scale = Math.max(scaleX, scaleY);
+      this.currentBg.setScale(scale).setScrollFactor(0);
+    }
+    // Update zones if needed
+    if (this.currentObject instanceof Phaser.GameObjects.Zone) {
+       this.currentObject.setPosition(gameSize.width * 0.5, gameSize.height * 0.5);
+    }
+    // Update touch zone
+    // ... complete resize logic is complex, simpler to rely on relative positioning in update/setup
+    // For now, restarting the room setup on resize might be safest or just ensuring key elements are relative.
+    this.setupRoom(this.currentRoom);
   }
 
   private setupRoom(roomNum: number) {
     this.currentRoom = roomNum;
-    console.log(`Setting up Room ${roomNum}`);
+    const width = this.scale.width;
+    const height = this.scale.height;
+
+    console.log(`Setting up Room ${roomNum} (${width}x${height})`);
 
     // Cleanup previous room elements
     this.currentBg?.destroy();
@@ -99,9 +119,10 @@ export default class Island1 extends Phaser.Scene {
 
     // 1. Background & NPC
     if (roomNum === 1) {
-      this.currentBg = this.add.image(GAME_CONFIG.WIDTH / 2, GAME_CONFIG.HEIGHT / 2, ASSETS.BG_ROOM_A).setDepth(0);
+      this.currentBg = this.add.image(width / 2, height / 2, ASSETS.BG_ROOM_A).setDepth(0);
+      
       // NPC grounded at 0.75 height
-      this.currentNpc = this.add.sprite(GAME_CONFIG.WIDTH * 0.25, GAME_CONFIG.HEIGHT * 0.75, ASSETS.NPC_GUIDEBOT).setScale(0.35).setDepth(20);
+      this.currentNpc = this.add.sprite(width * 0.25, height * 0.75, ASSETS.NPC_GUIDEBOT).setScale(0.35).setDepth(20);
       
       // Interactions
       this.currentNpc.setInteractive().on('pointerdown', () => {
@@ -160,8 +181,8 @@ export default class Island1 extends Phaser.Scene {
         this.createQuestItem();
       }
 
-      // Exit (Portal) - Invisible Zone (Background has the art)
-      this.exitObject = this.add.zone(GAME_CONFIG.WIDTH * 0.85, GAME_CONFIG.HEIGHT * 0.6, 200, 300).setInteractive();
+      // Exit (Portal) - Invisible Zone
+      this.exitObject = this.add.zone(width * 0.85, height * 0.6, 200, 300).setInteractive();
       this.exitObject.on('pointerdown', () => {
         if (this.hasCollectedItem) {
           this.setupRoom(2);
@@ -178,9 +199,9 @@ export default class Island1 extends Phaser.Scene {
       }
 
     } else if (roomNum === 2) {
-      this.currentBg = this.add.image(GAME_CONFIG.WIDTH / 2, GAME_CONFIG.HEIGHT / 2, ASSETS.BG_ROOM_B).setDepth(0);
+      this.currentBg = this.add.image(width / 2, height / 2, ASSETS.BG_ROOM_B).setDepth(0);
       // NPC grounded at 0.75 height
-      this.currentNpc = this.add.sprite(GAME_CONFIG.WIDTH * 0.75, GAME_CONFIG.HEIGHT * 0.75, ASSETS.NPC_VILLAGER).setScale(0.35).setDepth(20);
+      this.currentNpc = this.add.sprite(width * 0.75, height * 0.75, ASSETS.NPC_VILLAGER).setScale(0.35).setDepth(20);
       
       // Interactions
       const handleUnlock = () => {
@@ -207,19 +228,13 @@ export default class Island1 extends Phaser.Scene {
                  this.player!.container
                );
                
-               // Auto-trigger unlock after short delay or wait for next click?
-               // User said "next click... talks back", implying conversation first.
-               // Let's trigger the unlock sequence after player speech is shown for a bit or immediately?
-               // "then the next click the main character talks back each time"
-               // To unlock, we can auto-proceed after player talks.
-               
                this.time.delayedCall(1500, () => {
                   if (this.currentBubble) this.currentBubble.destroy();
                   // Walk to door
                   this.tweens.add({
                     targets: this.player!.container,
-                    x: GAME_CONFIG.WIDTH * 0.5,
-                    y: GAME_CONFIG.HEIGHT * 0.6,
+                    x: width * 0.5,
+                    y: height * 0.6,
                     duration: 1500,
                     onComplete: () => {
                       this.dialogueManager.show(DIALOGUES.VILLAGER_UNLOCK);
@@ -280,13 +295,13 @@ export default class Island1 extends Phaser.Scene {
       this.currentNpc.setInteractive().on('pointerdown', handleUnlock);
 
       // Locked Door - Invisible Zone
-      this.currentObject = this.add.zone(GAME_CONFIG.WIDTH * 0.5, GAME_CONFIG.HEIGHT * 0.6, 200, 300).setInteractive();
+      this.currentObject = this.add.zone(width * 0.5, height * 0.6, 200, 300).setInteractive();
       this.currentObject.on('pointerdown', handleUnlock);
 
     } else if (roomNum === 3) {
-      this.currentBg = this.add.image(GAME_CONFIG.WIDTH / 2, GAME_CONFIG.HEIGHT / 2, ASSETS.BG_ROOM_C).setDepth(0);
+      this.currentBg = this.add.image(width / 2, height / 2, ASSETS.BG_ROOM_C).setDepth(0);
       // NPC grounded at 0.75 height
-      this.currentNpc = this.add.sprite(GAME_CONFIG.WIDTH * 0.75, GAME_CONFIG.HEIGHT * 0.75, ASSETS.NPC_SAGE).setScale(0.35).setDepth(20);
+      this.currentNpc = this.add.sprite(width * 0.75, height * 0.75, ASSETS.NPC_SAGE).setScale(0.35).setDepth(20);
       
       // Interactions
       this.currentNpc.setInteractive().on('pointerdown', () => {
@@ -329,7 +344,7 @@ export default class Island1 extends Phaser.Scene {
       });
 
       // Open Door - Invisible Zone (Larger for easier escape)
-      this.currentObject = this.add.zone(GAME_CONFIG.WIDTH * 0.5, GAME_CONFIG.HEIGHT * 0.5, 600, 600)
+      this.currentObject = this.add.zone(width * 0.5, height * 0.5, 600, 600)
         .setDepth(100)
         .setInteractive();
         
@@ -339,25 +354,32 @@ export default class Island1 extends Phaser.Scene {
     }
 
     // Ensure BG covers screen
-    this.currentBg?.setDisplaySize(GAME_CONFIG.WIDTH, GAME_CONFIG.HEIGHT);
+    if (this.currentBg) {
+        const scaleX = width / this.currentBg.width;
+        const scaleY = height / this.currentBg.height;
+        const scale = Math.max(scaleX, scaleY);
+        this.currentBg.setScale(scale).setScrollFactor(0);
+    }
     
-    // Reposition Player to start
+    // Reposition Player to start (if just starting or room transition)
+    // Only move if not in middle of sequence? 
+    // Actually setupRoom is called on transition, so we should reset player.
     this.player!.x = 100;
-    this.player!.y = 500;
-    this.player!.container.setDepth(30); // Player Depth 30
+    this.player!.y = height * 0.7;
+    this.player!.container.setDepth(30);
   }
 
   private createQuestItem() {
     const itemKey = QUEST_DATA[1].room1Object;
     const item = new VisualCollectible(
       this, 
-      GAME_CONFIG.WIDTH * 0.5, GAME_CONFIG.HEIGHT * 0.6, // Center
+      this.scale.width * 0.5, this.scale.height * 0.6, // Center
       itemKey, 
       'quest_item', 
       'item_1', 
       QUEST_DATA[1].color
     );
-    item.setDepth(40); // Collectible Depth 40
+    item.setDepth(40);
     this.currentObject = item;
   }
 
@@ -396,7 +418,11 @@ export default class Island1 extends Phaser.Scene {
 
   // --- Standard Movement Code ---
   private setupTouchControls() {
-    const touchZone = this.add.zone(400, 300, 800, 600).setInteractive().setDepth(-1);
+    // Full screen touch zone
+    const width = this.scale.width;
+    const height = this.scale.height;
+    const touchZone = this.add.zone(width / 2, height / 2, width, height).setInteractive().setDepth(-1);
+    
     touchZone.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       this.pointerStartPos = { x: pointer.worldX, y: pointer.worldY };
     });
@@ -433,8 +459,9 @@ export default class Island1 extends Phaser.Scene {
 
     // Bounds & Depth
     if (moving) {
-      this.player.x = Phaser.Math.Clamp(this.player.x, GAME_CONFIG.PLAYER_BOUNDS.MIN_X, GAME_CONFIG.PLAYER_BOUNDS.MAX_X);
-      this.player.y = Phaser.Math.Clamp(this.player.y, GAME_CONFIG.PLAYER_BOUNDS.MIN_Y, GAME_CONFIG.PLAYER_BOUNDS.MAX_Y);
+      const margin = 50;
+      this.player.x = Phaser.Math.Clamp(this.player.x, margin, this.scale.width - margin);
+      this.player.y = Phaser.Math.Clamp(this.player.y, margin, this.scale.height - margin);
       
       // Prevent walking on top of NPC
       if (this.currentNpc) {

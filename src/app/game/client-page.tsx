@@ -37,7 +37,18 @@ export default function GameClientPage() {
         const Phaser = await import("phaser")
         const { config } = await import("../../game/config")
         
-        const game = new Phaser.Game(config)
+        // Override config for responsive sizing
+        const responsiveConfig = {
+          ...config,
+          scale: {
+            mode: Phaser.Scale.RESIZE,
+            width: '100%',
+            height: '100%',
+            autoCenter: Phaser.Scale.NO_CENTER
+          }
+        };
+
+        const game = new Phaser.Game(responsiveConfig)
         console.log("🎮 Game initialized!");
         
         return () => game.destroy(true)

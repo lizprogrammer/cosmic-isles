@@ -12,10 +12,10 @@ export class SpeechBubble extends Phaser.GameObjects.Container {
     this.bubbleGraphics = scene.add.graphics();
     this.textObject = scene.add.text(0, 0, text, {
       fontFamily: 'Arial',
-      fontSize: '16px',
+      fontSize: '24px',
       color: '#000000',
       align: 'center',
-      wordWrap: { width: 180 }
+      wordWrap: { width: 240 }
     }).setOrigin(0.5);
 
     this.add(this.bubbleGraphics);
@@ -43,10 +43,10 @@ export class SpeechBubble extends Phaser.GameObjects.Container {
 
   private drawBubble(): void {
     const bounds = this.textObject.getBounds();
-    const padding = 10;
+    const padding = 20;
     const w = bounds.width + padding * 2;
     const h = bounds.height + padding * 2;
-    const arrowHeight = 10;
+    const arrowHeight = 15;
 
     this.bubbleGraphics.clear();
     

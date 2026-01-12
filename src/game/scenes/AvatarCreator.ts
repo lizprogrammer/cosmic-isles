@@ -28,25 +28,32 @@ export default class AvatarCreator extends Phaser.Scene {
   }
 
   create() {
+    const cx = this.scale.width / 2;
+    const cy = this.scale.height / 2;
+    const width = this.scale.width;
+    const height = this.scale.height;
+
     // Background
-    this.add.rectangle(400, 300, 800, 600, 0x1a1a2e);
+    this.add.rectangle(cx, cy, width, height, 0x1a1a2e);
 
     // Title
-    this.add.text(400, 80, "👤 Create Your Star Walker", {
+    this.add.text(cx, height * 0.1, "👤 Create Your Star Walker", {
       fontSize: "36px",
       color: "#FFD700",
       fontFamily: "Arial, sans-serif",
       fontStyle: "bold"
     }).setOrigin(0.5);
 
-    this.add.text(400, 130, "This character will accompany you through all 5 islands", {
+    this.add.text(cx, height * 0.18, "This character will accompany you through all 5 islands", {
       fontSize: "18px",
       color: "#ffffff",
-      fontFamily: "Arial, sans-serif"
+      fontFamily: "Arial, sans-serif",
+      align: 'center',
+      wordWrap: { width: width * 0.8 }
     }).setOrigin(0.5);
 
     // Create preview container
-    this.previewSprite = this.add.container(400, 280);
+    this.previewSprite = this.add.container(cx, height * 0.45);
     
     // Build initial preview
     this.updatePreview();
@@ -57,7 +64,7 @@ export default class AvatarCreator extends Phaser.Scene {
     this.createAccessoryOptions();
 
     // Start button
-    const startButton = this.add.text(400, 520, "🚀 Begin Adventure", {
+    const startButton = this.add.text(cx, height * 0.85, "🚀 Begin Adventure", {
       fontSize: "28px",
       color: "#000000",
       fontFamily: "Arial, sans-serif",
@@ -126,20 +133,24 @@ export default class AvatarCreator extends Phaser.Scene {
   }
 
   private createBodyOptions(): void {
-    this.add.text(120, 360, "Body Color:", {
+    const cx = this.scale.width / 2;
+    const y = this.scale.height * 0.6;
+    
+    this.add.text(cx - 100, y, "Body Color:", {
       fontSize: "18px",
       color: "#FFD700",
       fontFamily: "Arial, sans-serif",
       fontStyle: "bold"
-    });
+    }).setOrigin(1, 0.5);
 
     const bodies = [
-      { key: "base-blue", label: "Blue", x: 120 },
-      { key: "base-green", label: "Green", x: 220 }
+      { key: "base-blue", label: "Blue" },
+      { key: "base-green", label: "Green" }
     ];
 
-    bodies.forEach((body) => {
-      const btn = this.createButton(body.x, 390, body.label, body.key, () => {
+    let startX = cx - 80;
+    bodies.forEach((body, index) => {
+      const btn = this.createButton(startX + index * 80, y, body.label, body.key, () => {
         this.selectedBody = body.key;
         this.updatePreview();
         this.updateButtons();
@@ -150,21 +161,25 @@ export default class AvatarCreator extends Phaser.Scene {
   }
 
   private createOutfitOptions(): void {
-    this.add.text(120, 440, "Outfit:", {
+    const cx = this.scale.width / 2;
+    const y = this.scale.height * 0.68;
+
+    this.add.text(cx - 100, y, "Outfit:", {
       fontSize: "18px",
       color: "#FFD700",
       fontFamily: "Arial, sans-serif",
       fontStyle: "bold"
-    });
+    }).setOrigin(1, 0.5);
 
     const outfits = [
-      { key: "outfit-1", label: "Classic", x: 120 },
-      { key: "outfit-2", label: "Explorer", x: 220 },
-      { key: "outfit-3", label: "Cosmic", x: 320 }
+      { key: "outfit-1", label: "Classic" },
+      { key: "outfit-2", label: "Explorer" },
+      { key: "outfit-3", label: "Cosmic" }
     ];
 
-    outfits.forEach((outfit) => {
-      const btn = this.createButton(outfit.x, 470, outfit.label, outfit.key, () => {
+    let startX = cx - 80;
+    outfits.forEach((outfit, index) => {
+      const btn = this.createButton(startX + index * 100, y, outfit.label, outfit.key, () => {
         this.selectedOutfit = outfit.key;
         this.updatePreview();
         this.updateButtons();
@@ -175,21 +190,25 @@ export default class AvatarCreator extends Phaser.Scene {
   }
 
   private createAccessoryOptions(): void {
-    this.add.text(480, 360, "Accessory:", {
+    const cx = this.scale.width / 2;
+    const y = this.scale.height * 0.76;
+
+    this.add.text(cx - 100, y, "Accessory:", {
       fontSize: "18px",
       color: "#FFD700",
       fontFamily: "Arial, sans-serif",
       fontStyle: "bold"
-    });
+    }).setOrigin(1, 0.5);
 
     const accessories = [
-      { key: "antenna", label: "Antenna", x: 480 },
-      { key: "glasses", label: "Glasses", x: 580 },
-      { key: "hat", label: "Hat", x: 680 }
+      { key: "antenna", label: "Antenna" },
+      { key: "glasses", label: "Glasses" },
+      { key: "hat", label: "Hat" }
     ];
 
-    accessories.forEach((acc) => {
-      const btn = this.createButton(acc.x, 390, acc.label, acc.key, () => {
+    let startX = cx - 80;
+    accessories.forEach((acc, index) => {
+      const btn = this.createButton(startX + index * 100, y, acc.label, acc.key, () => {
         this.selectedAccessory = acc.key;
         this.updatePreview();
         this.updateButtons();
