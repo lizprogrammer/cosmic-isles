@@ -29,12 +29,6 @@ export default class RoomA extends Phaser.Scene {
     this.background = this.add.image(400, 300, "roomA")
       .setDepth(0);
 
-    // Make entire background tappable on mobile
-    this.background.setInteractive(
-      new Phaser.Geom.Rectangle(0, 0, 800, 600),
-      Phaser.Geom.Rectangle.Contains
-    );
-
     // Player character
     this.player = this.add.sprite(100, 500, "guidebot")
       .setScale(0.8)
@@ -81,32 +75,40 @@ export default class RoomA extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(100);
 
     // TOUCH-AND-DRAG movement (mobile fix)
-    // Only handle background touches, not interactive objects
-    this.background.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-      // Check if we're touching an interactive object first
-      const hitGuidebot = this.guidebot?.getBounds().contains(pointer.x, pointer.y);
-      const hitStone = this.stone?.getBounds().contains(pointer.x, pointer.y);
+    // Use input manager directly for reliable mobile touch support
+    this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+      if (!this.player) return;
+      
+      // Get world coordinates from pointer
+      const worldX = pointer.worldX;
+      const worldY = pointer.worldY;
+      
+      // Check if we're touching an interactive object
+      const hitGuidebot = this.guidebot?.getBounds().contains(worldX, worldY);
+      const hitStone = this.stone?.getBounds().contains(worldX, worldY);
       
       // Only set touch target if not touching an interactive object
       if (!hitGuidebot && !hitStone) {
         this.touchTarget = {
-          x: Phaser.Math.Clamp(pointer.x, 50, 750),
-          y: Phaser.Math.Clamp(pointer.y, 50, 550)
+          x: Phaser.Math.Clamp(worldX, 50, 750),
+          y: Phaser.Math.Clamp(worldY, 50, 550)
         };
       }
     });
 
-    this.background.on("pointermove", (pointer: Phaser.Input.Pointer) => {
+    this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
       // Update touch target while dragging
       if (this.touchTarget && pointer.isDown) {
+        const worldX = pointer.worldX;
+        const worldY = pointer.worldY;
         this.touchTarget = {
-          x: Phaser.Math.Clamp(pointer.x, 50, 750),
-          y: Phaser.Math.Clamp(pointer.y, 50, 550)
+          x: Phaser.Math.Clamp(worldX, 50, 750),
+          y: Phaser.Math.Clamp(worldY, 50, 550)
         };
       }
     });
 
-    this.background.on("pointerup", () => {
+    this.input.on("pointerup", () => {
       // Clear touch target when touch ends
       this.touchTarget = undefined;
     });
@@ -155,7 +157,35 @@ export default class RoomA extends Phaser.Scene {
     let moving = false;
 
     // Touch-based movement (mobile)
-    if (this.touchTarget) {
+    // Check active pointer as fallback for mobile devices
+    const activePointer = this.input.activePointer;
+    if (activePointer && activePointer.isDown) {
+      // Active touch/mouse pointer - use it directly for movement
+      const worldX = activePointer.worldX;
+      const worldY = activePointer.worldY;
+      
+      // Check if we're touching an interactive object
+      const hitGuidebot = this.guidebot?.getBounds().contains(worldX, worldY);
+      const hitStone = this.stone?.getBounds().contains(worldX, worldY);
+      
+      if (!hitGuidebot && !hitStone) {
+        const dx = worldX - this.player.x;
+        const dy = worldY - this.player.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        // Move toward touch position if not already there
+        if (distance > speed) {
+          const angle = Math.atan2(dy, dx);
+          this.player.x += Math.cos(angle) * speed;
+          this.player.y += Math.sin(angle) * speed;
+          
+          // Flip sprite based on direction
+          this.player.setFlipX(dx < 0);
+          moving = true;
+        }
+      }
+    } else if (this.touchTarget) {
+      // Use stored touch target from event handlers
       const dx = this.touchTarget.x - this.player.x;
       const dy = this.touchTarget.y - this.player.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
