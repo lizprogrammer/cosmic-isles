@@ -5,11 +5,15 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     
+    // Enhanced progress tracking for all 5 islands
     const { data, error } = await supabase
       .from("progress")
       .insert({
-        questCompleted: body.questCompleted,
-        timestamp: new Date().toISOString(),
+        island_number: body.islandNum || 1,
+        quest_completed: body.completed || false,
+        badge_earned: body.badgeEarned || false,
+        timestamp: body.timestamp || new Date().toISOString(),
+        player_id: body.playerId || null, // Could link to Farcaster ID
       });
 
     if (error) {

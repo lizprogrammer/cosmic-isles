@@ -10,6 +10,7 @@ export class Boot extends Phaser.Scene {
   }
 
   create() {
-    this.scene.start('AvatarCreator')
+    // Start with main menu
+    this.scene.start('MainMenu')
   }
 }

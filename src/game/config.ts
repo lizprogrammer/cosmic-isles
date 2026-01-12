@@ -1,15 +1,20 @@
 import * as Phaser from "phaser"
 import { Boot } from './scenes/Boot'
+import MainMenu from './scenes/MainMenu'
 import AvatarCreator from './scenes/AvatarCreator'
-import RoomA from './scenes/RoomA'
-import RoomB from './scenes/RoomB'
-import RoomC from './scenes/RoomC'
+import Island1 from './scenes/Island1'
+import Island2 from './scenes/Island2'
+import Island3 from './scenes/Island3'
+import Island4 from './scenes/Island4'
+import Island5 from './scenes/Island5'
+import StarSanctum from './scenes/StarSanctum'
+import MintScreen from './scenes/MintScreen'
 
 export const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: 'game',
-  width: 800,
-  height: 600,
+  width: 1280,
+  height: 720,
   backgroundColor: '#000000',
 
   // ⭐ Mobile input fix
@@ -22,17 +27,13 @@ export const config: Phaser.Types.Core.GameConfig = {
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
-    width: 800,
-    height: 600,
+    width: 1280,
+    height: 720,
     min: {
       width: 320,
-      height: 240
-    },
-    max: {
-      width: 1920,
-      height: 1440
+      height: 180
     }
   },
 
-  scene: [Boot, AvatarCreator, RoomA, RoomB, RoomC]
+  scene: [Boot, MainMenu, AvatarCreator, Island1, Island2, Island3, Island4, Island5, StarSanctum, MintScreen]
 }

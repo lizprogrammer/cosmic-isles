@@ -86,10 +86,13 @@ export default function GameClientPage() {
         position: "fixed",
         top: 0,
         left: 0,
-        width: "100vw",
-        height: "100vh",
+        width: "100%",
+        height: "100%",
         overflow: "hidden",
-        background: "#000"
+        background: "#000",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center"
       }}
     />
   )

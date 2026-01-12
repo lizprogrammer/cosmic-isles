@@ -7,6 +7,7 @@ export interface PlayerState {
   choices: string[]
   itemsCollected: string[]
   playstyle: "explorer" | "warrior" | "diplomat" | null
+  playerName: string | null
 }
 
 export const playerState: PlayerState = {
@@ -17,5 +18,6 @@ export const playerState: PlayerState = {
   score: 0,
   choices: [],
   itemsCollected: [],
-  playstyle: null
+  playstyle: null,
+  playerName: null
 }
