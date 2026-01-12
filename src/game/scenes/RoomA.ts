@@ -8,7 +8,6 @@ export default class RoomA extends Phaser.Scene {
   private stone?: Phaser.GameObjects.Sprite;
   private hasSpokenToGuide: boolean = false;
   private dialogText?: Phaser.GameObjects.Text;
-  private background?: Phaser.GameObjects.Image;
   private touchTarget?: { x: number; y: number };
   private debugText?: Phaser.GameObjects.Text;
   private debugMode: boolean = true; // Set to false to disable debug output
@@ -28,7 +27,7 @@ export default class RoomA extends Phaser.Scene {
     this.input.addPointer(2);
 
     // Background
-    this.background = this.add.image(400, 300, "roomA")
+    this.add.image(400, 300, "roomA")
       .setDepth(0);
     
     // Create a full-screen invisible zone for touch input
