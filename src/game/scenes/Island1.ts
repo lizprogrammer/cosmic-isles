@@ -133,33 +133,48 @@ export default class Island1 extends Phaser.Scene {
           }
         }
 
-        // Interaction Logic
-        if (this.currentBubble && this.currentBubble.visible) {
-          if (this.currentBubble.targetActor === this.currentNpc) {
-            this.currentBubble.destroy();
-            const response = !this.hasCollectedItem
-              ? "I'm looking for it!"
-              : "I found it! Here you go.";
-            
-            this.currentBubble = new SpeechBubble(
-              this,
-              this.player!.x,
-              this.player!.y - 60,
-              response,
-              this.player!.container
-            );
-            return;
-          }
-          if (this.currentBubble.targetActor === this.player?.container) {
-            this.currentBubble.destroy();
-            return;
-          }
+        // Check if there is already a bubble for the NPC (Step 1 -> Step 2)
+        if (this.currentBubble && this.currentBubble.visible && this.currentBubble.targetActor === this.currentNpc) {
+           this.currentBubble.destroy();
+           
+           // Player Response
+           if (!this.hasCollectedItem) {
+             this.currentBubble = new SpeechBubble(
+                this,
+                this.player!.x,
+                this.player!.y - 60,
+                "I'll look for it!",
+                this.player!.container
+             );
+           } else {
+             this.currentBubble = new SpeechBubble(
+                this,
+                this.player!.x,
+                this.player!.y - 60,
+                "I found it! Here.",
+                this.player!.container
+             );
+             
+             // Final NPC acknowledgement and Action
+             this.time.delayedCall(1500, () => {
+                if (this.currentBubble) this.currentBubble.destroy();
+                this.currentBubble = new SpeechBubble(
+                  this,
+                  this.currentNpc!.x,
+                  this.currentNpc!.y - 60,
+                  "Excellent! Proceed.",
+                  this.currentNpc!
+                );
+             });
+           }
+           return;
         }
 
+        // Step 1: NPC speaks first
         this.currentBubble?.destroy();
         const message = !this.hasCollectedItem 
           ? "Please find the crystal!\nIt's somewhere nearby."
-          : "Great! You found it.\nNow let's open that door!";
+          : "Did you find the crystal?";
           
         this.currentBubble = new SpeechBubble(
           this, 
@@ -221,28 +236,45 @@ export default class Island1 extends Phaser.Scene {
           }
         }
 
-        if (this.currentBubble && this.currentBubble.visible) {
-          if (this.currentBubble.targetActor === this.currentNpc) {
+        // Step 2: Player Responds
+        if (this.currentBubble && this.currentBubble.visible && this.currentBubble.targetActor === this.currentNpc) {
              this.currentBubble.destroy();
+             
              if (this.hasCollectedItem) {
+               // Player confirms
                this.currentBubble = new SpeechBubble(
                  this,
                  this.player!.x,
                  this.player!.y - 60,
-                 "Yes! I can unlock the door.",
+                 "I have the crystal!",
                  this.player!.container
                );
+               
+               // Step 3: NPC Thanks & Action
                this.time.delayedCall(1500, () => {
                   if (this.currentBubble) this.currentBubble.destroy();
-                  this.tweens.add({
-                    targets: this.player!.container,
-                    x: width * 0.5,
-                    y: height * 0.6,
-                    duration: 1500,
-                    onComplete: () => {
-                      this.dialogueManager.show(DIALOGUES.VILLAGER_UNLOCK);
-                      this.time.delayedCall(1000, () => this.setupRoom(3));
-                    }
+                  
+                  this.currentBubble = new SpeechBubble(
+                    this,
+                    this.currentNpc!.x,
+                    this.currentNpc!.y - 60,
+                    "Thank you! The door opens.",
+                    this.currentNpc!
+                  );
+
+                  // Move to door logic
+                  this.time.delayedCall(1500, () => {
+                    if (this.currentBubble) this.currentBubble.destroy();
+                    this.tweens.add({
+                        targets: this.player!.container,
+                        x: width * 0.5,
+                        y: height * 0.6,
+                        duration: 1500,
+                        onComplete: () => {
+                          this.dialogueManager.show(DIALOGUES.VILLAGER_UNLOCK);
+                          this.time.delayedCall(1000, () => this.setupRoom(3));
+                        }
+                    });
                   });
                });
              } else {
@@ -250,25 +282,21 @@ export default class Island1 extends Phaser.Scene {
                  this,
                  this.player!.x,
                  this.player!.y - 60,
-                 "I'll find the crystal!",
+                 "I'll help you.",
                  this.player!.container
                );
              }
              return;
-          }
-          if (this.currentBubble.targetActor === this.player?.container) {
-            this.currentBubble.destroy();
-            return;
-          }
         }
 
+        // Step 1: NPC Speaks
         this.currentBubble?.destroy();
         if (this.hasCollectedItem) {
           this.currentBubble = new SpeechBubble(
             this,
             this.currentNpc!.x,
             this.currentNpc!.y - 60,
-            "Oh! You have the crystal?",
+            "Do you have the crystal?",
             this.currentNpc!
           );
         } else {
@@ -307,8 +335,8 @@ export default class Island1 extends Phaser.Scene {
           }
         }
         
-        if (this.currentBubble && this.currentBubble.visible) {
-          if (this.currentBubble.targetActor === this.currentNpc) {
+        // Step 2: Player Responds
+        if (this.currentBubble && this.currentBubble.visible && this.currentBubble.targetActor === this.currentNpc) {
             this.currentBubble.destroy();
             this.currentBubble = new SpeechBubble(
               this,
@@ -318,29 +346,37 @@ export default class Island1 extends Phaser.Scene {
               this.player!.container
             );
             
-            // Auto walk to exit after dialogue
+            // Step 3: NPC Permission & Action
             this.time.delayedCall(1500, () => {
                if (this.currentBubble) this.currentBubble.destroy();
-               this.tweens.add({
-                 targets: this.player!.container,
-                 x: width * 0.5,
-                 y: height * 0.5,
-                 duration: 1500,
-                 onComplete: () => {
-                   this.completeQuest();
-                 }
+               this.currentBubble = new SpeechBubble(
+                 this,
+                 this.currentNpc!.x,
+                 this.currentNpc!.y - 60,
+                 "You may enter.",
+                 this.currentNpc!
+               );
+               this.canExit = true;
+
+               // Auto walk to exit after dialogue
+               this.time.delayedCall(1500, () => {
+                 if (this.currentBubble) this.currentBubble.destroy();
+                 this.tweens.add({
+                   targets: this.player!.container,
+                   x: width * 0.5,
+                   y: height * 0.5,
+                   duration: 1500,
+                   onComplete: () => {
+                     this.completeQuest();
+                   }
+                 });
                });
             });
             return;
-          }
-          if (this.currentBubble.targetActor === this.player?.container) {
-            this.currentBubble.destroy();
-            return;
-          }
         }
 
+        // Step 1: NPC Speaks
         this.currentBubble?.destroy();
-        this.canExit = true; // Allow exit immediately
         this.currentBubble = new SpeechBubble(
           this, 
           this.currentNpc!.x, 
@@ -444,13 +480,24 @@ export default class Island1 extends Phaser.Scene {
     const pointer = this.input.activePointer;
     
     if (pointer.isDown && this.pointerStartPos) {
-      const dist = Phaser.Math.Distance.Between(pointer.worldX, pointer.worldY, this.pointerStartPos.x, this.pointerStartPos.y);
-      if (dist > GAME_CONFIG.DRAG_THRESHOLD) {
-        const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, pointer.worldX, pointer.worldY);
-        this.player.x += Math.cos(angle) * speed;
-        this.player.y += Math.sin(angle) * speed;
-        this.player.flipX(Math.cos(angle) < 0);
-        moving = true;
+      const dragDist = Phaser.Math.Distance.Between(pointer.worldX, pointer.worldY, this.pointerStartPos.x, this.pointerStartPos.y);
+      
+      if (dragDist > GAME_CONFIG.DRAG_THRESHOLD) {
+        // Distance to target (finger) to prevent jitter
+        const distToTarget = Phaser.Math.Distance.Between(this.player.x, this.player.y, pointer.worldX, pointer.worldY);
+        
+        if (distToTarget > 15) {
+            const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, pointer.worldX, pointer.worldY);
+            this.player.x += Math.cos(angle) * speed;
+            this.player.y += Math.sin(angle) * speed;
+            
+            // Only flip if moving significantly horizontally to prevent rapid flipping
+            const cos = Math.cos(angle);
+            if (Math.abs(cos) > 0.2) {
+                this.player.flipX(cos < 0);
+            }
+            moving = true;
+        }
       }
     }
 
