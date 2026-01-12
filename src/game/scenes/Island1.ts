@@ -100,9 +100,9 @@ export default class Island1 extends Phaser.Scene {
 
     // Dynamic asset scaling - Reduced for "smaller objects"
     // Base scale: 1.0 at 1280px width
-    // Multiplier: 0.7 (70% of original size)
+    // Multiplier: 0.9 (Larger on mobile)
     const baseScale = Math.min(width / 1280, 1);
-    const assetScale = baseScale * 0.7; 
+    const assetScale = baseScale * 0.9; 
 
     console.log(`Setting up Room ${roomNum} (${width}x${height}) Scale: ${assetScale}`);
 
@@ -119,7 +119,7 @@ export default class Island1 extends Phaser.Scene {
       
       // NPC
       this.currentNpc = this.add.sprite(width * 0.25, height * 0.75, ASSETS.NPC_GUIDEBOT)
-        .setScale(assetScale * 0.6)
+        .setScale(assetScale * 0.8)
         .setDepth(20);
       
       // Interactions
@@ -177,7 +177,7 @@ export default class Island1 extends Phaser.Scene {
 
       // Exit (Portal)
       this.exitObject = this.add.sprite(width * 0.85, height * 0.6, ASSETS.PORTAL)
-        .setScale(assetScale * 0.4)
+        .setScale(assetScale * 0.5)
         .setDepth(15)
         .setInteractive();
       
@@ -201,7 +201,7 @@ export default class Island1 extends Phaser.Scene {
       // New Quest Announcement
       if (!this.hasCollectedItem) {
         this.time.delayedCall(500, () => {
-          this.dialogueManager.showAnnouncement("QUEST STARTED:\nFIND THE CRYSTAL");
+          this.dialogueManager.showAnnouncement("NEW QUEST: CRYSTAL ISLE\nFIND THE GLOWING STONE!");
         });
       }
 
@@ -209,7 +209,7 @@ export default class Island1 extends Phaser.Scene {
       this.currentBg = this.add.image(width / 2, height / 2, ASSETS.BG_ROOM_B).setDepth(0);
       
       this.currentNpc = this.add.sprite(width * 0.75, height * 0.75, ASSETS.NPC_VILLAGER)
-        .setScale(assetScale * 0.6)
+        .setScale(assetScale * 0.8)
         .setDepth(20);
       
       const handleUnlock = () => {
@@ -285,7 +285,7 @@ export default class Island1 extends Phaser.Scene {
       this.currentNpc.setInteractive().on('pointerdown', handleUnlock);
       
       this.currentObject = this.add.sprite(width * 0.5, height * 0.6, ASSETS.DOOR_LOCKED)
-        .setScale(assetScale * 0.4)
+        .setScale(assetScale * 0.5)
         .setDepth(15)
         .setInteractive();
         
@@ -295,7 +295,7 @@ export default class Island1 extends Phaser.Scene {
       this.currentBg = this.add.image(width / 2, height / 2, ASSETS.BG_ROOM_C).setDepth(0);
       
       this.currentNpc = this.add.sprite(width * 0.75, height * 0.75, ASSETS.NPC_SAGE)
-        .setScale(assetScale * 0.6)
+        .setScale(assetScale * 0.8)
         .setDepth(20);
       
       this.currentNpc.setInteractive().on('pointerdown', () => {
@@ -352,7 +352,7 @@ export default class Island1 extends Phaser.Scene {
 
       // Open Door
       this.currentObject = this.add.sprite(width * 0.5, height * 0.5, ASSETS.DOOR_OPEN)
-        .setScale(assetScale * 0.4)
+        .setScale(assetScale * 0.5)
         .setDepth(15)
         .setInteractive();
         
@@ -390,7 +390,7 @@ export default class Island1 extends Phaser.Scene {
       'item_1', 
       QUEST_DATA[1].color
     );
-    item.mainSprite.setScale(scale * 0.25); // Significantly reduced scale
+    item.mainSprite.setScale(scale * 0.4); 
     item.setDepth(40);
     this.currentObject = item;
   }

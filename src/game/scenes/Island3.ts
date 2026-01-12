@@ -87,7 +87,7 @@ export default class Island3 extends Phaser.Scene {
     const height = this.scale.height;
     
     const baseScale = Math.min(width / 1280, 1);
-    const assetScale = baseScale * 0.7; 
+    const assetScale = baseScale * 0.9; 
 
     console.log(`Setting up Room ${roomNum} (${width}x${height}) Scale: ${assetScale}`);
     
@@ -101,7 +101,7 @@ export default class Island3 extends Phaser.Scene {
       this.currentBg = this.add.image(width / 2, height / 2, ASSETS.BG_ROOM_A).setDepth(0);
       
       this.currentNpc = this.add.sprite(width * 0.25, height * 0.75, ASSETS.NPC_GUIDEBOT)
-        .setScale(0.35 * assetScale)
+        .setScale(0.8 * assetScale)
         .setDepth(20);
       
       this.currentNpc.setInteractive().on('pointerdown', () => {
@@ -154,7 +154,7 @@ export default class Island3 extends Phaser.Scene {
       }
 
       this.exitObject = this.add.sprite(width * 0.85, height * 0.6, ASSETS.PORTAL)
-        .setScale(assetScale)
+        .setScale(assetScale * 0.5)
         .setDepth(15)
         .setInteractive();
 
@@ -168,7 +168,7 @@ export default class Island3 extends Phaser.Scene {
 
       if (!this.hasCollectedItem) {
         this.time.delayedCall(500, () => {
-          this.dialogueManager.showAnnouncement("QUEST STARTED:\nFIND THE SONG SEED");
+          this.dialogueManager.showAnnouncement("NEW QUEST: WHISPERING GROVE\nFIND THE HIDDEN SEED!");
         });
       }
 
@@ -176,7 +176,7 @@ export default class Island3 extends Phaser.Scene {
       this.currentBg = this.add.image(width / 2, height / 2, ASSETS.BG_ROOM_B).setDepth(0);
       
       this.currentNpc = this.add.sprite(width * 0.75, height * 0.75, ASSETS.NPC_VILLAGER)
-        .setScale(0.35 * assetScale)
+        .setScale(0.8 * assetScale)
         .setDepth(20);
       
       // Removed delayed call
@@ -257,7 +257,7 @@ export default class Island3 extends Phaser.Scene {
       this.currentNpc.setInteractive().on('pointerdown', handleUnlock);
 
       this.currentObject = this.add.sprite(width * 0.5, height * 0.6, ASSETS.DOOR_LOCKED)
-        .setScale(assetScale)
+        .setScale(assetScale * 0.5)
         .setDepth(15)
         .setInteractive();
 
@@ -267,7 +267,7 @@ export default class Island3 extends Phaser.Scene {
       this.currentBg = this.add.image(width / 2, height / 2, ASSETS.BG_ROOM_C).setDepth(0);
       
       this.currentNpc = this.add.sprite(width * 0.75, height * 0.75, ASSETS.NPC_SAGE)
-        .setScale(0.35 * assetScale)
+        .setScale(0.8 * assetScale)
         .setDepth(20);
       
       this.currentNpc.setInteractive().on('pointerdown', () => {
@@ -323,7 +323,7 @@ export default class Island3 extends Phaser.Scene {
       });
 
       this.currentObject = this.add.sprite(width * 0.5, height * 0.5, ASSETS.DOOR_OPEN)
-        .setScale(assetScale)
+        .setScale(assetScale * 0.5)
         .setDepth(15)
         .setInteractive();
         
@@ -353,15 +353,21 @@ export default class Island3 extends Phaser.Scene {
 
   private createQuestItem(scale: number) {
     const itemKey = QUEST_DATA[3].room1Object;
+    
+    // Random position for "Hidden Seed"
+    const margin = 200;
+    const randomX = Phaser.Math.Between(margin, this.scale.width - margin);
+    const randomY = Phaser.Math.Between(this.scale.height * 0.3, this.scale.height * 0.8);
+
     const item = new VisualCollectible(
       this, 
-      this.scale.width * 0.5, this.scale.height * 0.6, 
+      randomX, randomY, 
       itemKey, 
       'quest_item', 
       'item_3', 
       QUEST_DATA[3].color
     );
-    item.mainSprite.setScale(scale * 0.25); // Significantly reduced scale
+    item.mainSprite.setScale(scale * 0.4); 
     item.setDepth(40);
     this.currentObject = item;
   }

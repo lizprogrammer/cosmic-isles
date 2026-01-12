@@ -88,7 +88,7 @@ export default class Island2 extends Phaser.Scene {
     
     // Dynamic asset scaling - Reduced for "smaller objects"
     const baseScale = Math.min(width / 1280, 1);
-    const assetScale = baseScale * 0.7; 
+    const assetScale = baseScale * 0.9; 
 
     console.log(`Setting up Room ${roomNum} (${width}x${height}) Scale: ${assetScale}`);
     
@@ -102,7 +102,7 @@ export default class Island2 extends Phaser.Scene {
       this.currentBg = this.add.image(width / 2, height / 2, ASSETS.BG_ROOM_A).setDepth(0);
       
       this.currentNpc = this.add.sprite(width * 0.25, height * 0.75, ASSETS.NPC_GUIDEBOT)
-        .setScale(assetScale * 0.6)
+        .setScale(assetScale * 0.8)
         .setDepth(20);
       
       this.currentNpc.setInteractive().on('pointerdown', () => {
@@ -155,7 +155,7 @@ export default class Island2 extends Phaser.Scene {
       }
 
       this.exitObject = this.add.sprite(width * 0.85, height * 0.6, ASSETS.PORTAL)
-        .setScale(assetScale * 0.4)
+        .setScale(assetScale * 0.5)
         .setDepth(15)
         .setInteractive();
         
@@ -169,7 +169,7 @@ export default class Island2 extends Phaser.Scene {
 
       if (!this.hasCollectedItem) {
         this.time.delayedCall(500, () => {
-          this.dialogueManager.showAnnouncement("QUEST STARTED:\nFIND THE EMBER CORE");
+          this.dialogueManager.showAnnouncement("NEW QUEST: EMBER FORGE\nCATCH THE MOVING CORE!");
         });
       }
 
@@ -177,7 +177,7 @@ export default class Island2 extends Phaser.Scene {
       this.currentBg = this.add.image(width / 2, height / 2, ASSETS.BG_ROOM_B).setDepth(0);
       
       this.currentNpc = this.add.sprite(width * 0.75, height * 0.75, ASSETS.NPC_VILLAGER)
-        .setScale(assetScale * 0.6)
+        .setScale(assetScale * 0.8)
         .setDepth(20);
       
       const handleUnlock = () => {
@@ -256,7 +256,7 @@ export default class Island2 extends Phaser.Scene {
       this.currentNpc.setInteractive().on('pointerdown', handleUnlock);
 
       this.currentObject = this.add.sprite(width * 0.5, height * 0.6, ASSETS.DOOR_LOCKED)
-        .setScale(assetScale * 0.4)
+        .setScale(assetScale * 0.5)
         .setDepth(15)
         .setInteractive();
 
@@ -266,7 +266,7 @@ export default class Island2 extends Phaser.Scene {
       this.currentBg = this.add.image(width / 2, height / 2, ASSETS.BG_ROOM_C).setDepth(0);
       
       this.currentNpc = this.add.sprite(width * 0.75, height * 0.75, ASSETS.NPC_SAGE)
-        .setScale(assetScale * 0.6)
+        .setScale(assetScale * 0.8)
         .setDepth(20);
       
       this.currentNpc.setInteractive().on('pointerdown', () => {
@@ -323,7 +323,7 @@ export default class Island2 extends Phaser.Scene {
 
       // Increased zone size for easier clicking
       this.currentObject = this.add.sprite(width * 0.5, height * 0.5, ASSETS.DOOR_OPEN)
-        .setScale(assetScale * 0.4)
+        .setScale(assetScale * 0.5)
         .setDepth(15)
         .setInteractive();
         
@@ -361,9 +361,20 @@ export default class Island2 extends Phaser.Scene {
       'item_2', 
       QUEST_DATA[2].color
     );
-    item.mainSprite.setScale(scale * 0.25); // Significantly reduced scale
+    item.mainSprite.setScale(scale * 0.4); 
     item.setDepth(40);
     this.currentObject = item;
+    
+    // Add movement tween for "moving core"
+    this.tweens.add({
+      targets: item,
+      y: item.y - 100,
+      x: item.x + 50,
+      duration: 2000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
   }
 
   update(time: number, delta: number) {

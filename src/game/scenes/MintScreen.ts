@@ -13,12 +13,17 @@ export default class MintScreen extends Phaser.Scene {
 
   create() {
     console.log('🎨 Mint Screen - Preparing NFT...');
+    
+    const width = this.scale.width;
+    const height = this.scale.height;
+    const cx = width / 2;
+    const cy = height / 2;
 
     // Background
-    this.add.rectangle(400, 300, 800, 600, 0x0a0a1a, 1).setDepth(0);
+    this.add.rectangle(cx, cy, width, height, 0x0a0a1a, 1).setDepth(0);
 
     // Title
-    this.add.text(400, 50, '🌌 COSMIC ISLES ACHIEVEMENT 🌌', {
+    this.add.text(cx, height * 0.1, '🌌 COSMIC ISLES ACHIEVEMENT 🌌', {
       fontSize: '32px',
       color: '#FFD700',
       fontFamily: 'Arial, sans-serif',
@@ -27,14 +32,14 @@ export default class MintScreen extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(10);
 
     // NFT Preview Card
-    this.createNFTPreview();
+    this.createNFTPreview(cx, cy);
 
     // Mint button
-    this.createMintButton();
+    this.createMintButton(cx, height * 0.85);
 
     // Back button
-    const backButton = this.add.text(50, 550, '← Back to Sanctum', {
-      fontSize: '16px',
+    const backButton = this.add.text(50, height - 50, '← Back to Sanctum', {
+      fontSize: '20px',
       color: '#aaaaaa',
       fontFamily: 'Arial, sans-serif'
     }).setInteractive().setDepth(10);
@@ -52,21 +57,21 @@ export default class MintScreen extends Phaser.Scene {
     });
   }
 
-  private createNFTPreview(): void {
+  private createNFTPreview(cx: number, cy: number): void {
     // Card background
     const card = this.add.graphics();
     card.fillStyle(0x1a1a2e, 1);
-    card.fillRoundedRect(200, 100, 400, 400, 15);
+    card.fillRoundedRect(cx - 200, cy - 200, 400, 400, 15);
     card.lineStyle(3, 0xFFD700, 1);
-    card.strokeRoundedRect(200, 100, 400, 400, 15);
+    card.strokeRoundedRect(cx - 200, cy - 200, 400, 400, 15);
     card.setDepth(5);
 
     // NFT Image placeholder (reformed star)
     const starGraphic = this.add.graphics();
     starGraphic.fillStyle(0xFFD700, 1);
-    starGraphic.fillCircle(400, 220, 60);
+    starGraphic.fillCircle(cx, cy - 80, 60);
     starGraphic.lineStyle(2, 0xffffff, 1);
-    starGraphic.strokeCircle(400, 220, 60);
+    starGraphic.strokeCircle(cx, cy - 80, 60);
     starGraphic.setDepth(6);
 
     // Glow animation
@@ -94,7 +99,7 @@ export default class MintScreen extends Phaser.Scene {
       `Player: ${playerState.playerName || 'Star Walker'}`
     ];
 
-    this.add.text(400, 340, metadata.join('\n'), {
+    this.add.text(cx, cy + 40, metadata.join('\n'), {
       fontSize: '16px',
       color: '#ffffff',
       fontFamily: 'Arial, sans-serif',
@@ -103,17 +108,17 @@ export default class MintScreen extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(6);
   }
 
-  private createMintButton(): void {
+  private createMintButton(cx: number, y: number): void {
     const button = this.add.graphics();
     button.fillStyle(0xFFD700, 1);
-    button.fillRoundedRect(250, 520, 300, 60, 10);
+    button.fillRoundedRect(cx - 150, y - 30, 300, 60, 10);
     button.setDepth(10);
     button.setInteractive(
-      new Phaser.Geom.Rectangle(250, 520, 300, 60),
+      new Phaser.Geom.Rectangle(cx - 150, y - 30, 300, 60),
       Phaser.Geom.Rectangle.Contains
     );
 
-    const buttonText = this.add.text(400, 550, '🎨 MINT NFT', {
+    const buttonText = this.add.text(cx, y, '🎨 MINT NFT', {
       fontSize: '28px',
       color: '#000000',
       fontFamily: 'Arial, sans-serif',
@@ -124,13 +129,13 @@ export default class MintScreen extends Phaser.Scene {
     button.on('pointerover', () => {
       button.clear();
       button.fillStyle(0xFFFFFF, 1);
-      button.fillRoundedRect(250, 520, 300, 60, 10);
+      button.fillRoundedRect(cx - 150, y - 30, 300, 60, 10);
     });
 
     button.on('pointerout', () => {
       button.clear();
       button.fillStyle(0xFFD700, 1);
-      button.fillRoundedRect(250, 520, 300, 60, 10);
+      button.fillRoundedRect(cx - 150, y - 30, 300, 60, 10);
     });
 
     button.on('pointerdown', () => {
@@ -141,8 +146,11 @@ export default class MintScreen extends Phaser.Scene {
   private async mintNFT(): Promise<void> {
     console.log('🎨 Initiating NFT mint...');
 
+    const width = this.scale.width;
+    const height = this.scale.height;
+    
     // Show loading state
-    const loadingText = this.add.text(400, 300, 'Minting your achievement...', {
+    const loadingText = this.add.text(width / 2, height / 2, 'Minting your achievement...', {
       fontSize: '24px',
       color: '#FFD700',
       fontFamily: 'Arial, sans-serif',
@@ -202,7 +210,11 @@ export default class MintScreen extends Phaser.Scene {
   }
 
   private showShareOptions(): void {
-    const shareText = this.add.text(400, 300, 
+    const width = this.scale.width;
+    const height = this.scale.height;
+    const cx = width / 2;
+
+    const shareText = this.add.text(cx, height / 2, 
       '🎉 Share your achievement!\n\n' +
       'I completed all 3 Cosmic Isles and\n' +
       'reforged the Shattered Star! 🌟',
@@ -216,7 +228,7 @@ export default class MintScreen extends Phaser.Scene {
       }
     ).setOrigin(0.5).setDepth(100);
 
-    const playAgainButton = this.add.text(400, 450, '🔄 Play Again', {
+    const playAgainButton = this.add.text(cx, height * 0.75, '🔄 Play Again', {
       fontSize: '24px',
       color: '#FFD700',
       fontFamily: 'Arial, sans-serif',
