@@ -28,6 +28,11 @@ export default class RoomA extends Phaser.Scene {
     // Background
     this.background = this.add.image(400, 300, "roomA")
       .setDepth(0);
+    
+    // Create a full-screen invisible zone for touch input
+    const touchZone = this.add.zone(400, 300, 800, 600)
+      .setInteractive({ useHandCursor: false })
+      .setDepth(1000); // High depth but invisible
 
     // Player character
     this.player = this.add.sprite(100, 500, "guidebot")
@@ -75,8 +80,8 @@ export default class RoomA extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(100);
 
     // TOUCH-AND-DRAG movement (mobile fix)
-    // Use input manager directly for reliable mobile touch support
-    this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+    // Use the touch zone for reliable mobile touch support
+    touchZone.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
       if (!this.player) return;
       
       // Get world coordinates from pointer
@@ -96,11 +101,41 @@ export default class RoomA extends Phaser.Scene {
       }
     });
 
-    this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
+    touchZone.on("pointermove", (pointer: Phaser.Input.Pointer) => {
       // Update touch target while dragging
-      if (this.touchTarget && pointer.isDown) {
+      if (pointer.isDown) {
         const worldX = pointer.worldX;
         const worldY = pointer.worldY;
+        
+        // Check if we're touching an interactive object
+        const hitGuidebot = this.guidebot?.getBounds().contains(worldX, worldY);
+        const hitStone = this.stone?.getBounds().contains(worldX, worldY);
+        
+        if (!hitGuidebot && !hitStone) {
+          this.touchTarget = {
+            x: Phaser.Math.Clamp(worldX, 50, 750),
+            y: Phaser.Math.Clamp(worldY, 50, 550)
+          };
+        }
+      }
+    });
+
+    touchZone.on("pointerup", () => {
+      // Clear touch target when touch ends
+      this.touchTarget = undefined;
+    });
+
+    // Also add global input handlers as backup for mobile
+    this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+      if (!this.player || this.touchTarget) return; // Don't override if zone already handled it
+      
+      const worldX = pointer.worldX;
+      const worldY = pointer.worldY;
+      
+      const hitGuidebot = this.guidebot?.getBounds().contains(worldX, worldY);
+      const hitStone = this.stone?.getBounds().contains(worldX, worldY);
+      
+      if (!hitGuidebot && !hitStone) {
         this.touchTarget = {
           x: Phaser.Math.Clamp(worldX, 50, 750),
           y: Phaser.Math.Clamp(worldY, 50, 550)
@@ -108,10 +143,27 @@ export default class RoomA extends Phaser.Scene {
       }
     });
 
+    this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
+      if (pointer.isDown && this.touchTarget) {
+        const worldX = pointer.worldX;
+        const worldY = pointer.worldY;
+        
+        const hitGuidebot = this.guidebot?.getBounds().contains(worldX, worldY);
+        const hitStone = this.stone?.getBounds().contains(worldX, worldY);
+        
+        if (!hitGuidebot && !hitStone) {
+          this.touchTarget = {
+            x: Phaser.Math.Clamp(worldX, 50, 750),
+            y: Phaser.Math.Clamp(worldY, 50, 550)
+          };
+        }
+      }
+    });
+
     this.input.on("pointerup", () => {
-      // Clear touch target when touch ends
       this.touchTarget = undefined;
     });
+
 
     // Guidebot interaction
     this.guidebot.on("pointerdown", () => {
@@ -157,10 +209,17 @@ export default class RoomA extends Phaser.Scene {
     let moving = false;
 
     // Touch-based movement (mobile)
-    // Check active pointer as fallback for mobile devices
+    // Prioritize touch input over keyboard for mobile devices
     const activePointer = this.input.activePointer;
-    if (activePointer && activePointer.isDown) {
-      // Active touch/mouse pointer - use it directly for movement
+    const isKeyboardMoving = this.cursors && (
+      this.cursors.left?.isDown || 
+      this.cursors.right?.isDown || 
+      this.cursors.up?.isDown || 
+      this.cursors.down?.isDown
+    );
+    
+    // Only use touch if keyboard is not being used (to avoid conflicts on desktop)
+    if (!isKeyboardMoving && activePointer && activePointer.isDown) {
       const worldX = activePointer.worldX;
       const worldY = activePointer.worldY;
       
