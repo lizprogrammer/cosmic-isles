@@ -23,7 +23,7 @@ export class DialogueManager {
 
     // Text
     this.dialogueText = this.scene.add.text(
-      GAME_CONFIG.WIDTH / 2,
+      this.scene.scale.width / 2,
       50,
       '',
       {
@@ -32,7 +32,7 @@ export class DialogueManager {
         align: 'center',
         fontFamily: 'Arial, sans-serif',
         padding: { x: 20, y: 15 },
-        wordWrap: { width: GAME_CONFIG.WIDTH - 100 }
+        wordWrap: { width: this.scene.scale.width - 100 }
       }
     );
     this.dialogueText.setOrigin(0.5);
@@ -45,6 +45,11 @@ export class DialogueManager {
    */
   show(message: string, duration: number = GAME_CONFIG.DIALOGUE_DURATION): void {
     if (!this.dialogueText || !this.dialogueBackground) return;
+
+    // Update position and wrap width on show
+    const width = this.scene.scale.width;
+    this.dialogueText.setX(width / 2);
+    this.dialogueText.setStyle({ wordWrap: { width: width - 100 } });
 
     // Clear any existing timeout
     if (this.currentTimeout) {
@@ -112,18 +117,18 @@ export class DialogueManager {
 
     // Background overlay (full screen dim)
     const overlay = this.scene.add.rectangle(
-      GAME_CONFIG.WIDTH / 2, 
-      GAME_CONFIG.HEIGHT / 2, 
-      GAME_CONFIG.WIDTH, 
-      GAME_CONFIG.HEIGHT, 
+      this.scene.scale.width / 2, 
+      this.scene.scale.height / 2, 
+      this.scene.scale.width, 
+      this.scene.scale.height, 
       0x000000, 
       0.7
     ).setDepth(2000).setAlpha(0);
 
     // Text
     const text = this.scene.add.text(
-      GAME_CONFIG.WIDTH / 2,
-      GAME_CONFIG.HEIGHT / 2,
+      this.scene.scale.width / 2,
+      this.scene.scale.height / 2,
       message,
       {
         fontSize: '48px',
@@ -134,7 +139,7 @@ export class DialogueManager {
         stroke: '#000000',
         strokeThickness: 6,
         padding: { x: 20, y: 20 },
-        wordWrap: { width: GAME_CONFIG.WIDTH - 100 }
+        wordWrap: { width: this.scene.scale.width - 100 }
       }
     ).setOrigin(0.5).setDepth(2001).setAlpha(0).setScale(0.5);
 

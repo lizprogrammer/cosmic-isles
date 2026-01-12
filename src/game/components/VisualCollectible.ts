@@ -5,7 +5,7 @@ import { GAME_CONFIG } from '../utils/constants';
  * Enhanced collectible with proper visual graphics
  */
 export class VisualCollectible extends Phaser.GameObjects.Container {
-  private mainSprite: Phaser.GameObjects.Sprite;
+  public mainSprite: Phaser.GameObjects.Sprite;
   private glowCircle: Phaser.GameObjects.Graphics;
   private particles?: Phaser.GameObjects.Particles.ParticleEmitter;
   private floatTween?: Phaser.Tweens.Tween;

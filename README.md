@@ -246,7 +246,7 @@ Located at `/.well-known/farcaster.json`:
 
 ### SDK Integration
 ```typescript
-import sdk from '@farcaster/frame-sdk';
+import sdk from '@farcaster/miniapp-sdk';
 
 // Signal ready state
 await sdk.actions.ready();

@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@farcaster/frame-sdk": "^0.1.0",
+    "@farcaster/miniapp-sdk": "^0.2.1",
     "@supabase/supabase-js": "2.39.3",
     "autoprefixer": "10.4.17",
     "next": "^14.2.35",

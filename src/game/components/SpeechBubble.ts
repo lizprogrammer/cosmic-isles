@@ -25,6 +25,20 @@ export class SpeechBubble extends Phaser.GameObjects.Container {
     scene.add.existing(this);
     this.setDepth(5000); // Top layer
 
+    // Clamp position to screen bounds
+    const bounds = this.textObject.getBounds();
+    const w = bounds.width + 40; // Approx width with padding
+    const h = bounds.height + 40;
+    
+    const margin = 20;
+    const minX = w / 2 + margin;
+    const maxX = scene.scale.width - w / 2 - margin;
+    const minY = h / 2 + margin;
+    const maxY = scene.scale.height - h / 2 - margin;
+
+    this.x = Phaser.Math.Clamp(this.x, minX, maxX);
+    this.y = Phaser.Math.Clamp(this.y, minY, maxY);
+
     // Pop in animation
     this.setScale(0);
     scene.tweens.add({

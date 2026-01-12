@@ -8,7 +8,6 @@ import { ProgressUI } from '../components/ProgressUI';
 import { Player, preloadPlayerAvatar } from '../utils/player';
 import { AssetGenerator } from '../utils/AssetGenerator';
 import { GAME_CONFIG, QUEST_DATA, DIALOGUES, ASSETS } from '../utils/constants';
-
 import { SpeechBubble } from '../components/SpeechBubble';
 
 /**
@@ -31,7 +30,8 @@ export default class Island1 extends Phaser.Scene {
   private exitObject?: Phaser.GameObjects.GameObject;   // The exit (e.g. Portal)
   private currentBubble?: SpeechBubble; // Track active speech bubble
   
-  // Quest State
+  // Logic Flags
+  private canExit: boolean = false; 
   private hasCollectedItem: boolean = false;
   private pointerStartPos?: { x: number; y: number };
 
@@ -86,29 +86,25 @@ export default class Island1 extends Phaser.Scene {
   }
 
   private handleResize(gameSize: Phaser.Structs.Size) {
-    if (this.currentBg) {
-      this.currentBg.setPosition(gameSize.width / 2, gameSize.height / 2);
-      const scaleX = gameSize.width / this.currentBg.width;
-      const scaleY = gameSize.height / this.currentBg.height;
-      const scale = Math.max(scaleX, scaleY);
-      this.currentBg.setScale(scale).setScrollFactor(0);
-    }
-    // Update zones if needed
-    if (this.currentObject instanceof Phaser.GameObjects.Zone) {
-       this.currentObject.setPosition(gameSize.width * 0.5, gameSize.height * 0.5);
-    }
-    // Update touch zone
-    // ... complete resize logic is complex, simpler to rely on relative positioning in update/setup
-    // For now, restarting the room setup on resize might be safest or just ensuring key elements are relative.
+    // Ideally we would just resize background and reposition elements
+    // But for simplicity in this structure, we can re-run setupRoom
     this.setupRoom(this.currentRoom);
   }
 
   private setupRoom(roomNum: number) {
     this.currentRoom = roomNum;
+    this.canExit = false; 
+    
     const width = this.scale.width;
     const height = this.scale.height;
 
-    console.log(`Setting up Room ${roomNum} (${width}x${height})`);
+    // Dynamic asset scaling - Reduced for "smaller objects"
+    // Base scale: 1.0 at 1280px width
+    // Multiplier: 0.7 (70% of original size)
+    const baseScale = Math.min(width / 1280, 1);
+    const assetScale = baseScale * 0.7; 
+
+    console.log(`Setting up Room ${roomNum} (${width}x${height}) Scale: ${assetScale}`);
 
     // Cleanup previous room elements
     this.currentBg?.destroy();
@@ -121,8 +117,10 @@ export default class Island1 extends Phaser.Scene {
     if (roomNum === 1) {
       this.currentBg = this.add.image(width / 2, height / 2, ASSETS.BG_ROOM_A).setDepth(0);
       
-      // NPC grounded at 0.75 height
-      this.currentNpc = this.add.sprite(width * 0.25, height * 0.75, ASSETS.NPC_GUIDEBOT).setScale(0.35).setDepth(20);
+      // NPC
+      this.currentNpc = this.add.sprite(width * 0.25, height * 0.75, ASSETS.NPC_GUIDEBOT)
+        .setScale(0.35 * assetScale)
+        .setDepth(20);
       
       // Interactions
       this.currentNpc.setInteractive().on('pointerdown', () => {
@@ -135,9 +133,8 @@ export default class Island1 extends Phaser.Scene {
           }
         }
 
-        // Interaction Logic: NPC -> Player -> NPC
+        // Interaction Logic
         if (this.currentBubble && this.currentBubble.visible) {
-          // If NPC is talking, Player talks back
           if (this.currentBubble.targetActor === this.currentNpc) {
             this.currentBubble.destroy();
             const response = !this.hasCollectedItem
@@ -153,16 +150,13 @@ export default class Island1 extends Phaser.Scene {
             );
             return;
           }
-          // If Player is talking, destroy bubble (end conversation)
           if (this.currentBubble.targetActor === this.player?.container) {
             this.currentBubble.destroy();
             return;
           }
         }
 
-        // Start Conversation (NPC talks first)
         this.currentBubble?.destroy();
-        
         const message = !this.hasCollectedItem 
           ? "Please find the crystal!\nIt's somewhere nearby."
           : "Great! You found it.\nNow let's open that door!";
@@ -178,14 +172,27 @@ export default class Island1 extends Phaser.Scene {
 
       // Item
       if (!this.hasCollectedItem) {
-        this.createQuestItem();
+        this.createQuestItem(assetScale);
       }
 
-      // Exit (Portal) - Invisible Zone
-      this.exitObject = this.add.zone(width * 0.85, height * 0.6, 200, 300).setInteractive();
+      // Exit (Portal)
+      this.exitObject = this.add.sprite(width * 0.85, height * 0.6, ASSETS.PORTAL)
+        .setScale(assetScale)
+        .setDepth(15)
+        .setInteractive();
+      
       this.exitObject.on('pointerdown', () => {
         if (this.hasCollectedItem) {
-          this.setupRoom(2);
+          // Auto walk to exit
+          this.tweens.add({
+            targets: this.player!.container,
+            x: width * 0.85,
+            y: height * 0.6,
+            duration: 1000,
+            onComplete: () => {
+              this.setupRoom(2);
+            }
+          });
         } else {
           this.dialogueManager.show("I need the object first!");
         }
@@ -200,12 +207,12 @@ export default class Island1 extends Phaser.Scene {
 
     } else if (roomNum === 2) {
       this.currentBg = this.add.image(width / 2, height / 2, ASSETS.BG_ROOM_B).setDepth(0);
-      // NPC grounded at 0.75 height
-      this.currentNpc = this.add.sprite(width * 0.75, height * 0.75, ASSETS.NPC_VILLAGER).setScale(0.35).setDepth(20);
       
-      // Interactions
+      this.currentNpc = this.add.sprite(width * 0.75, height * 0.75, ASSETS.NPC_VILLAGER)
+        .setScale(0.35 * assetScale)
+        .setDepth(20);
+      
       const handleUnlock = () => {
-        // Proximity Check
         if (this.player) {
           const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.currentNpc!.x, this.currentNpc!.y);
           if (dist > 150) {
@@ -214,11 +221,9 @@ export default class Island1 extends Phaser.Scene {
           }
         }
 
-        // Click-based interaction
         if (this.currentBubble && this.currentBubble.visible) {
           if (this.currentBubble.targetActor === this.currentNpc) {
              this.currentBubble.destroy();
-             
              if (this.hasCollectedItem) {
                this.currentBubble = new SpeechBubble(
                  this,
@@ -227,10 +232,8 @@ export default class Island1 extends Phaser.Scene {
                  "Yes! I can unlock the door.",
                  this.player!.container
                );
-               
                this.time.delayedCall(1500, () => {
                   if (this.currentBubble) this.currentBubble.destroy();
-                  // Walk to door
                   this.tweens.add({
                     targets: this.player!.container,
                     x: width * 0.5,
@@ -259,9 +262,7 @@ export default class Island1 extends Phaser.Scene {
           }
         }
 
-        // Start Conversation
         this.currentBubble?.destroy();
-        
         if (this.hasCollectedItem) {
           this.currentBubble = new SpeechBubble(
             this,
@@ -281,7 +282,6 @@ export default class Island1 extends Phaser.Scene {
         }
       };
 
-      // Initial Bubble (Auto Trigger)
       this.time.delayedCall(500, () => {
         this.currentBubble = new SpeechBubble(
           this,
@@ -293,19 +293,22 @@ export default class Island1 extends Phaser.Scene {
       });
 
       this.currentNpc.setInteractive().on('pointerdown', handleUnlock);
-
-      // Locked Door - Invisible Zone
-      this.currentObject = this.add.zone(width * 0.5, height * 0.6, 200, 300).setInteractive();
+      
+      this.currentObject = this.add.sprite(width * 0.5, height * 0.6, ASSETS.DOOR_LOCKED)
+        .setScale(assetScale)
+        .setDepth(15)
+        .setInteractive();
+        
       this.currentObject.on('pointerdown', handleUnlock);
 
     } else if (roomNum === 3) {
       this.currentBg = this.add.image(width / 2, height / 2, ASSETS.BG_ROOM_C).setDepth(0);
-      // NPC grounded at 0.75 height
-      this.currentNpc = this.add.sprite(width * 0.75, height * 0.75, ASSETS.NPC_SAGE).setScale(0.35).setDepth(20);
       
-      // Interactions
+      this.currentNpc = this.add.sprite(width * 0.75, height * 0.75, ASSETS.NPC_SAGE)
+        .setScale(0.35 * assetScale)
+        .setDepth(20);
+      
       this.currentNpc.setInteractive().on('pointerdown', () => {
-        // Proximity Check
         if (this.player) {
           const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.currentNpc!.x, this.currentNpc!.y);
           if (dist > 150) {
@@ -314,7 +317,6 @@ export default class Island1 extends Phaser.Scene {
           }
         }
         
-        // Click-based conversation
         if (this.currentBubble && this.currentBubble.visible) {
           if (this.currentBubble.targetActor === this.currentNpc) {
             this.currentBubble.destroy();
@@ -325,6 +327,20 @@ export default class Island1 extends Phaser.Scene {
               "Thank you, Sage.",
               this.player!.container
             );
+            
+            // Auto walk to exit after dialogue
+            this.time.delayedCall(1500, () => {
+               if (this.currentBubble) this.currentBubble.destroy();
+               this.tweens.add({
+                 targets: this.player!.container,
+                 x: width * 0.5,
+                 y: height * 0.5,
+                 duration: 1500,
+                 onComplete: () => {
+                   this.completeQuest();
+                 }
+               });
+            });
             return;
           }
           if (this.currentBubble.targetActor === this.player?.container) {
@@ -334,6 +350,7 @@ export default class Island1 extends Phaser.Scene {
         }
 
         this.currentBubble?.destroy();
+        this.canExit = true; // Allow exit immediately
         this.currentBubble = new SpeechBubble(
           this, 
           this.currentNpc!.x, 
@@ -343,17 +360,21 @@ export default class Island1 extends Phaser.Scene {
         );
       });
 
-      // Open Door - Invisible Zone (Larger for easier escape)
-      this.currentObject = this.add.zone(width * 0.5, height * 0.5, 600, 600)
-        .setDepth(100)
+      // Open Door
+      this.currentObject = this.add.sprite(width * 0.5, height * 0.5, ASSETS.DOOR_OPEN)
+        .setScale(assetScale)
+        .setDepth(15)
         .setInteractive();
         
       this.currentObject.on('pointerdown', () => {
-        this.completeQuest();
+        if (this.canExit) {
+          this.completeQuest();
+        } else {
+          this.dialogueManager.show("I should speak to the Sage first.");
+        }
       });
     }
 
-    // Ensure BG covers screen
     if (this.currentBg) {
         const scaleX = width / this.currentBg.width;
         const scaleY = height / this.currentBg.height;
@@ -361,24 +382,25 @@ export default class Island1 extends Phaser.Scene {
         this.currentBg.setScale(scale).setScrollFactor(0);
     }
     
-    // Reposition Player to start (if just starting or room transition)
-    // Only move if not in middle of sequence? 
-    // Actually setupRoom is called on transition, so we should reset player.
-    this.player!.x = 100;
-    this.player!.y = height * 0.7;
-    this.player!.container.setDepth(30);
+    if (this.player) {
+      this.player.setScale(assetScale);
+      this.player.x = 100;
+      this.player.y = height * 0.7;
+      this.player.container.setDepth(30);
+    }
   }
 
-  private createQuestItem() {
+  private createQuestItem(scale: number) {
     const itemKey = QUEST_DATA[1].room1Object;
     const item = new VisualCollectible(
       this, 
-      this.scale.width * 0.5, this.scale.height * 0.6, // Center
+      this.scale.width * 0.5, this.scale.height * 0.6,
       itemKey, 
       'quest_item', 
       'item_1', 
       QUEST_DATA[1].color
     );
+    item.mainSprite.setScale(scale * 0.3); // Significantly reduced scale
     item.setDepth(40);
     this.currentObject = item;
   }
@@ -387,7 +409,6 @@ export default class Island1 extends Phaser.Scene {
     if (!this.player) return;
     this.handleMovement();
     
-    // Check Item Collection in Room 1
     if (this.currentRoom === 1 && !this.hasCollectedItem && this.currentObject instanceof VisualCollectible) {
       if (this.currentObject.isPlayerNear(this.player.x, this.player.y)) {
         this.currentObject.collect(() => {
@@ -395,7 +416,6 @@ export default class Island1 extends Phaser.Scene {
           this.dialogueManager.show(DIALOGUES.ITEM_COLLECTED);
           this.progressUI.showBadgeEarned(1);
           
-          // Auto-advance to Room 2 after a short delay
           this.time.delayedCall(2000, () => {
              this.dialogueManager.showAnnouncement("PROCEEDING TO NEXT ROOM...");
              this.time.delayedCall(1000, () => this.setupRoom(2));
@@ -407,7 +427,6 @@ export default class Island1 extends Phaser.Scene {
 
   private completeQuest() {
     this.dialogueManager.showAnnouncement("QUEST COMPLETE!");
-    // this.dialogueManager.show(DIALOGUES.SAGE_COMPLETE); // Replaced by announcement
     questState.completeIsland(1);
     gameState.currentIsland = 2;
     
@@ -416,17 +435,12 @@ export default class Island1 extends Phaser.Scene {
     });
   }
 
-  // --- Standard Movement Code ---
   private setupTouchControls() {
-    // Full screen touch zone
-    const width = this.scale.width;
-    const height = this.scale.height;
-    const touchZone = this.add.zone(width / 2, height / 2, width, height).setInteractive().setDepth(-1);
-    
-    touchZone.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+    // Global input listener for start position
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       this.pointerStartPos = { x: pointer.worldX, y: pointer.worldY };
     });
-    touchZone.on('pointerup', () => {
+    this.input.on('pointerup', () => {
       this.pointerStartPos = undefined;
     });
   }
@@ -435,13 +449,14 @@ export default class Island1 extends Phaser.Scene {
     if (!this.player) return;
     const speed = GAME_CONFIG.PLAYER_SPEED;
     let moving = false;
-    const activePointer = this.input.activePointer;
     
-    // Mouse/Touch Drag
-    if (activePointer.isDown && this.pointerStartPos) {
-      const dist = Phaser.Math.Distance.Between(activePointer.worldX, activePointer.worldY, this.pointerStartPos.x, this.pointerStartPos.y);
+    // Robust Touch Logic
+    const pointer = this.input.activePointer;
+    
+    if (pointer.isDown && this.pointerStartPos) {
+      const dist = Phaser.Math.Distance.Between(pointer.worldX, pointer.worldY, this.pointerStartPos.x, this.pointerStartPos.y);
       if (dist > GAME_CONFIG.DRAG_THRESHOLD) {
-        const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, activePointer.worldX, activePointer.worldY);
+        const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, pointer.worldX, pointer.worldY);
         this.player.x += Math.cos(angle) * speed;
         this.player.y += Math.sin(angle) * speed;
         this.player.flipX(Math.cos(angle) < 0);
@@ -449,7 +464,6 @@ export default class Island1 extends Phaser.Scene {
       }
     }
 
-    // Keyboard
     if (this.cursors) {
       if (this.cursors.left.isDown) { this.player.x -= speed; this.player.flipX(true); moving = true; }
       else if (this.cursors.right.isDown) { this.player.x += speed; this.player.flipX(false); moving = true; }
@@ -457,7 +471,6 @@ export default class Island1 extends Phaser.Scene {
       else if (this.cursors.down.isDown) { this.player.y += speed; moving = true; }
     }
 
-    // Bounds & Depth
     if (moving) {
       const margin = 50;
       this.player.x = Phaser.Math.Clamp(this.player.x, margin, this.scale.width - margin);
@@ -474,10 +487,9 @@ export default class Island1 extends Phaser.Scene {
         }
       }
 
-      // Prevent walking on top of Collectible (only when not collecting)
       if (this.currentObject instanceof VisualCollectible && !this.hasCollectedItem) {
         const objDist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.currentObject.x, this.currentObject.y);
-        const minObjDist = 60; // Get close but not on top
+        const minObjDist = 60;
         if (objDist < minObjDist) {
            const angle = Phaser.Math.Angle.Between(this.currentObject.x, this.currentObject.y, this.player.x, this.player.y);
            this.player.x = this.currentObject.x + Math.cos(angle) * minObjDist;
@@ -485,7 +497,6 @@ export default class Island1 extends Phaser.Scene {
         }
       }
 
-      // Fixed depth for player, no dynamic sorting
       this.player.container.setDepth(30); 
     }
   }

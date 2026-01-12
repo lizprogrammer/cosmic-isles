@@ -12,7 +12,7 @@ export default function GameClientPage() {
     // Call Farcaster ready using the installed npm package
     const callReady = async () => {
       try {
-        const { sdk } = await import("@farcaster/frame-sdk");
+        const { sdk } = await import("@farcaster/miniapp-sdk");
         await sdk.actions.ready();
         console.log('✅ Farcaster SDK ready called!');
       } catch (error) {

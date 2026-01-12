@@ -13,7 +13,7 @@ export default function GamePage() {
 
   Promise.resolve().then(async () => {
     try {
-      const { sdk } = await import("@farcaster/frame-sdk")
+      const { sdk } = await import("@farcaster/miniapp-sdk")
       await sdk.actions.ready()
       console.log("SDK ready called from server wrapper")
     } catch (err) {

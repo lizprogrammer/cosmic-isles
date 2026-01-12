@@ -9,7 +9,7 @@ export async function callFarcasterReady() {
       return true;
     }
     
-    const { default: sdk } = await import("@farcaster/frame-sdk");
+    const { default: sdk } = await import("@farcaster/miniapp-sdk");
     await sdk.actions.ready();
     return true;
   } catch (error) {

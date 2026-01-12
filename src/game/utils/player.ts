@@ -12,6 +12,7 @@ export class Player {
   private accessorySprite: Phaser.GameObjects.Sprite;
   private glowCircle: Phaser.GameObjects.Graphics;
   private scene: Phaser.Scene;
+  private currentScale: number = 1;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     this.scene = scene;
@@ -69,7 +70,14 @@ export class Player {
   }
 
   flipX(flip: boolean): void {
-    this.container.setScale(flip ? -1 : 1, 1);
+    this.container.setScale(flip ? -this.currentScale : this.currentScale, this.currentScale);
+  }
+
+  setScale(scale: number): void {
+    this.currentScale = scale;
+    // Maintain facing direction
+    const isFlipped = this.container.scaleX < 0;
+    this.container.setScale(isFlipped ? -scale : scale, scale);
   }
 
   destroy(): void {
