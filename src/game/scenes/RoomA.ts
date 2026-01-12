@@ -9,6 +9,7 @@ export default class RoomA extends Phaser.Scene {
   private hasSpokenToGuide: boolean = false;
   private dialogText?: Phaser.GameObjects.Text;
   private background?: Phaser.GameObjects.Image;
+  private touchTarget?: { x: number; y: number };
 
   constructor() {
     super("RoomA");
@@ -74,25 +75,40 @@ export default class RoomA extends Phaser.Scene {
     this.cursors = this.input.keyboard?.createCursorKeys();
 
     // Instructions
-    this.add.text(400, 580, "Arrow keys or TAP to move • Click objects to interact", {
+    this.add.text(400, 580, "Arrow keys or TOUCH & DRAG to move • Click objects to interact", {
       fontSize: "14px",
       color: "#aaaaaa"
     }).setOrigin(0.5).setDepth(100);
 
-    // TAP‑TO‑MOVE (mobile fix)
+    // TOUCH-AND-DRAG movement (mobile fix)
+    // Only handle background touches, not interactive objects
     this.background.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-      if (!this.player) return;
+      // Check if we're touching an interactive object first
+      const hitGuidebot = this.guidebot?.getBounds().contains(pointer.x, pointer.y);
+      const hitStone = this.stone?.getBounds().contains(pointer.x, pointer.y);
+      
+      // Only set touch target if not touching an interactive object
+      if (!hitGuidebot && !hitStone) {
+        this.touchTarget = {
+          x: Phaser.Math.Clamp(pointer.x, 50, 750),
+          y: Phaser.Math.Clamp(pointer.y, 50, 550)
+        };
+      }
+    });
 
-      const targetX = Phaser.Math.Clamp(pointer.x, 50, 750);
-      const targetY = Phaser.Math.Clamp(pointer.y, 50, 550);
+    this.background.on("pointermove", (pointer: Phaser.Input.Pointer) => {
+      // Update touch target while dragging
+      if (this.touchTarget && pointer.isDown) {
+        this.touchTarget = {
+          x: Phaser.Math.Clamp(pointer.x, 50, 750),
+          y: Phaser.Math.Clamp(pointer.y, 50, 550)
+        };
+      }
+    });
 
-      this.tweens.add({
-        targets: this.player,
-        x: targetX,
-        y: targetY,
-        duration: 500,
-        ease: "Power2"
-      });
+    this.background.on("pointerup", () => {
+      // Clear touch target when touch ends
+      this.touchTarget = undefined;
     });
 
     // Guidebot interaction
@@ -133,28 +149,51 @@ export default class RoomA extends Phaser.Scene {
   }
 
   update() {
-    if (!this.player || !this.cursors) return;
+    if (!this.player) return;
 
     const speed = 3;
     let moving = false;
 
-    // Keyboard movement
-    if (this.cursors.left?.isDown) {
-      this.player.x -= speed;
-      this.player.setFlipX(true);
-      moving = true;
-    } else if (this.cursors.right?.isDown) {
-      this.player.x += speed;
-      this.player.setFlipX(false);
-      moving = true;
+    // Touch-based movement (mobile)
+    if (this.touchTarget) {
+      const dx = this.touchTarget.x - this.player.x;
+      const dy = this.touchTarget.y - this.player.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      // Move toward touch target if not already there
+      if (distance > speed) {
+        const angle = Math.atan2(dy, dx);
+        this.player.x += Math.cos(angle) * speed;
+        this.player.y += Math.sin(angle) * speed;
+        
+        // Flip sprite based on direction
+        this.player.setFlipX(dx < 0);
+        moving = true;
+      } else {
+        // Reached target, clear it
+        this.touchTarget = undefined;
+      }
     }
 
-    if (this.cursors.up?.isDown) {
-      this.player.y -= speed;
-      moving = true;
-    } else if (this.cursors.down?.isDown) {
-      this.player.y += speed;
-      moving = true;
+    // Keyboard movement (desktop)
+    if (this.cursors) {
+      if (this.cursors.left?.isDown) {
+        this.player.x -= speed;
+        this.player.setFlipX(true);
+        moving = true;
+      } else if (this.cursors.right?.isDown) {
+        this.player.x += speed;
+        this.player.setFlipX(false);
+        moving = true;
+      }
+
+      if (this.cursors.up?.isDown) {
+        this.player.y -= speed;
+        moving = true;
+      } else if (this.cursors.down?.isDown) {
+        this.player.y += speed;
+        moving = true;
+      }
     }
 
     // Keep player in bounds
