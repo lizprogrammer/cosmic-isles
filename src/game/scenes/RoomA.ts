@@ -83,10 +83,10 @@ export default class RoomA extends Phaser.Scene {
     // Debug text for troubleshooting
     if (this.debugMode) {
       this.debugText = this.add.text(10, 10, "Debug: Waiting for input...", {
-        fontSize: "12px",
+        fontSize: "32px",
         color: "#00ff00",
         backgroundColor: "#000000",
-        padding: { x: 5, y: 5 }
+        padding: { x: 10, y: 10 }
       }).setDepth(1000).setScrollFactor(0);
     }
 
