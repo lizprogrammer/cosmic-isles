@@ -86,7 +86,7 @@ export default class MintScreen extends Phaser.Scene {
     const metadata = [
       'STAR REFORGED',
       '',
-      `Islands Completed: 5/5`,
+      `Islands Completed: 3/3`,
       `Badges: ${badges.join(', ')}`,
       `Completion Time: ${playTime} min`,
       `Speed: ${speed}`,
@@ -204,7 +204,7 @@ export default class MintScreen extends Phaser.Scene {
   private showShareOptions(): void {
     const shareText = this.add.text(400, 300, 
       '🎉 Share your achievement!\n\n' +
-      'I completed all 5 Cosmic Isles and\n' +
+      'I completed all 3 Cosmic Isles and\n' +
       'reforged the Shattered Star! 🌟',
       {
         fontSize: '20px',

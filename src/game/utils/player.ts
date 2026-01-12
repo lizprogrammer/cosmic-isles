@@ -39,15 +39,15 @@ export class Player {
 
     // Build avatar from player state
     this.bodySprite = scene.add.sprite(0, 0, playerState.bodyColor || 'base-blue');
-    this.bodySprite.setScale(0.35);
+    this.bodySprite.setScale(0.6);
     this.container.add(this.bodySprite);
 
     this.outfitSprite = scene.add.sprite(0, 0, playerState.outfit || 'outfit-1');
-    this.outfitSprite.setScale(0.35);
+    this.outfitSprite.setScale(0.6);
     this.container.add(this.outfitSprite);
 
     this.accessorySprite = scene.add.sprite(0, 0, playerState.accessory || 'antenna');
-    this.accessorySprite.setScale(0.35);
+    this.accessorySprite.setScale(0.6);
     this.container.add(this.accessorySprite);
 
     scene.add.existing(this.container);

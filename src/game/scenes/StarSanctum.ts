@@ -79,9 +79,7 @@ export default class StarSanctum extends Phaser.Scene {
     const fragmentPositions = [
       { x: width * 0.25, y: height * 0.3, color: ISLANDS.ISLAND_1.color },
       { x: width * 0.75, y: height * 0.3, color: ISLANDS.ISLAND_2.color },
-      { x: width * 0.2, y: height * 0.7, color: ISLANDS.ISLAND_3.color },
-      { x: width * 0.8, y: height * 0.7, color: ISLANDS.ISLAND_4.color },
-      { x: width * 0.5, y: height * 0.85, color: ISLANDS.ISLAND_5.color }
+      { x: width * 0.5, y: height * 0.7, color: ISLANDS.ISLAND_3.color }
     ];
 
     fragmentPositions.forEach((data) => {
@@ -145,9 +143,7 @@ export default class StarSanctum extends Phaser.Scene {
     const colors = [
       ISLANDS.ISLAND_1.color,
       ISLANDS.ISLAND_2.color,
-      ISLANDS.ISLAND_3.color,
-      ISLANDS.ISLAND_4.color,
-      ISLANDS.ISLAND_5.color
+      ISLANDS.ISLAND_3.color
     ];
 
     colors.forEach((color, index) => {
@@ -200,7 +196,7 @@ export default class StarSanctum extends Phaser.Scene {
 
     const statsText = this.add.text(cx, height * 0.75, 
       `Journey Complete!\n` +
-      `Badges Earned: ${badges}/5\n` +
+      `Badges Earned: ${badges}/3\n` +
       `Time: ${playTime} minutes\n` +
       `Completion: ${gameState.completionSpeed || 'normal'}`,
       {

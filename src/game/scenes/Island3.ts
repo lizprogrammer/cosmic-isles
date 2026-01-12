@@ -179,15 +179,7 @@ export default class Island3 extends Phaser.Scene {
         .setScale(0.35 * assetScale)
         .setDepth(20);
       
-      this.time.delayedCall(500, () => {
-        this.currentBubble = new SpeechBubble(
-          this,
-          this.currentNpc!.x,
-          this.currentNpc!.y - 60,
-          "The forest is silent...\nWe need the seed.",
-          this.currentNpc!
-        );
-      });
+      // Removed delayed call
 
       const handleUnlock = () => {
         if (this.player) {
@@ -325,7 +317,7 @@ export default class Island3 extends Phaser.Scene {
           this, 
           this.currentNpc!.x, 
           this.currentNpc!.y - 60, 
-          "The ancient tree awakes!\nTap the portal to enter.",
+          "The ancient tree awakes!",
           this.currentNpc!
         );
       });
@@ -353,7 +345,7 @@ export default class Island3 extends Phaser.Scene {
     
     if (this.player) {
       this.player.setScale(assetScale);
-      this.player.x = 100;
+      this.player.x = width * 0.1;
       this.player.y = height * 0.7;
       this.player.container.setDepth(30);
     }
@@ -369,14 +361,14 @@ export default class Island3 extends Phaser.Scene {
       'item_3', 
       QUEST_DATA[3].color
     );
-    item.mainSprite.setScale(scale * 0.3); // Significantly reduced scale
+    item.mainSprite.setScale(scale * 0.25); // Significantly reduced scale
     item.setDepth(40);
     this.currentObject = item;
   }
 
-  update() {
+  update(time: number, delta: number) {
     if (!this.player) return;
-    this.handleMovement();
+    this.handleMovement(delta);
     
     if (this.currentRoom === 1 && !this.hasCollectedItem && this.currentObject instanceof VisualCollectible) {
       if (this.currentObject.isPlayerNear(this.player.x, this.player.y)) {
@@ -397,10 +389,10 @@ export default class Island3 extends Phaser.Scene {
   private completeQuest() {
     this.dialogueManager.showAnnouncement("QUEST COMPLETE!");
     questState.completeIsland(3);
-    gameState.currentIsland = 4;
+    gameState.currentIsland = 4; // Or logic for end game
     
     this.time.delayedCall(3000, () => {
-      this.scene.start('Island4');
+      this.scene.start('StarSanctum');
     });
   }
 
@@ -414,9 +406,9 @@ export default class Island3 extends Phaser.Scene {
     });
   }
 
-  private handleMovement() {
+  private handleMovement(delta: number) {
     if (!this.player) return;
-    const speed = GAME_CONFIG.PLAYER_SPEED;
+    const speed = (GAME_CONFIG.PLAYER_SPEED * delta) / 16;
     let moving = false;
     
     const pointer = this.input.activePointer;
@@ -446,7 +438,7 @@ export default class Island3 extends Phaser.Scene {
       
       if (this.currentNpc) {
         const npcDist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.currentNpc.x, this.currentNpc.y);
-        const minDist = 80;
+        const minDist = 40;
         if (npcDist < minDist) {
           const angle = Phaser.Math.Angle.Between(this.currentNpc.x, this.currentNpc.y, this.player.x, this.player.y);
           this.player.x = this.currentNpc.x + Math.cos(angle) * minDist;

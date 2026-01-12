@@ -12,8 +12,6 @@ export interface QuestStateData {
   island1: IslandQuest;
   island2: IslandQuest;
   island3: IslandQuest;
-  island4: IslandQuest;
-  island5: IslandQuest;
   metaQuestComplete: boolean;
 }
 
@@ -41,21 +39,6 @@ class QuestStateManager {
       progress: {
         seedsCollected: 0,
         seedsPlanted: 0
-      }
-    },
-    island4: {
-      completed: false,
-      badgeEarned: false,
-      progress: {
-        creaturesRescued: 0,
-        moonstoneAligned: false
-      }
-    },
-    island5: {
-      completed: false,
-      badgeEarned: false,
-      progress: {
-        rodsCharged: 0
       }
     },
     metaQuestComplete: false
@@ -100,15 +83,13 @@ class QuestStateManager {
   }
 
   /**
-   * Check if all 5 islands are complete
+   * Check if all 3 islands are complete
    */
   areAllIslandsComplete(): boolean {
     return (
       this.data.island1.completed &&
       this.data.island2.completed &&
-      this.data.island3.completed &&
-      this.data.island4.completed &&
-      this.data.island5.completed
+      this.data.island3.completed
     );
   }
 
@@ -130,8 +111,6 @@ class QuestStateManager {
     if (this.data.island1.badgeEarned) badges.push('Crystal Keeper');
     if (this.data.island2.badgeEarned) badges.push('Flame Tamer');
     if (this.data.island3.badgeEarned) badges.push('Grove Guardian');
-    if (this.data.island4.badgeEarned) badges.push('Tidecaller');
-    if (this.data.island5.badgeEarned) badges.push('Stormbinder');
     return badges;
   }
 
@@ -170,8 +149,6 @@ class QuestStateManager {
       island1: { completed: false, badgeEarned: false, progress: { crystalsCollected: 0, deliveredToWizard: false } },
       island2: { completed: false, badgeEarned: false, progress: { ventsActivated: 0, spiritCaptured: false } },
       island3: { completed: false, badgeEarned: false, progress: { seedsCollected: 0, seedsPlanted: 0 } },
-      island4: { completed: false, badgeEarned: false, progress: { creaturesRescued: 0, moonstoneAligned: false } },
-      island5: { completed: false, badgeEarned: false, progress: { rodsCharged: 0 } },
       metaQuestComplete: false
     };
     console.log('🔄 Quest state reset');

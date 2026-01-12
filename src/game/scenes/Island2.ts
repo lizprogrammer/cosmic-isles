@@ -102,7 +102,7 @@ export default class Island2 extends Phaser.Scene {
       this.currentBg = this.add.image(width / 2, height / 2, ASSETS.BG_ROOM_A).setDepth(0);
       
       this.currentNpc = this.add.sprite(width * 0.25, height * 0.75, ASSETS.NPC_GUIDEBOT)
-        .setScale(0.35 * assetScale)
+        .setScale(assetScale * 0.6)
         .setDepth(20);
       
       this.currentNpc.setInteractive().on('pointerdown', () => {
@@ -151,11 +151,11 @@ export default class Island2 extends Phaser.Scene {
       });
 
       if (!this.hasCollectedItem) {
-        this.createQuestItem(assetScale);
+        this.createQuestItem(assetScale, width, height);
       }
 
       this.exitObject = this.add.sprite(width * 0.85, height * 0.6, ASSETS.PORTAL)
-        .setScale(assetScale)
+        .setScale(assetScale * 0.4)
         .setDepth(15)
         .setInteractive();
         
@@ -177,18 +177,8 @@ export default class Island2 extends Phaser.Scene {
       this.currentBg = this.add.image(width / 2, height / 2, ASSETS.BG_ROOM_B).setDepth(0);
       
       this.currentNpc = this.add.sprite(width * 0.75, height * 0.75, ASSETS.NPC_VILLAGER)
-        .setScale(0.35 * assetScale)
+        .setScale(assetScale * 0.6)
         .setDepth(20);
-      
-      this.time.delayedCall(500, () => {
-        this.currentBubble = new SpeechBubble(
-          this,
-          this.currentNpc!.x,
-          this.currentNpc!.y - 60,
-          "The forge is cold...\nI need fire!",
-          this.currentNpc!
-        );
-      });
       
       const handleUnlock = () => {
         if (this.player) {
@@ -266,7 +256,7 @@ export default class Island2 extends Phaser.Scene {
       this.currentNpc.setInteractive().on('pointerdown', handleUnlock);
 
       this.currentObject = this.add.sprite(width * 0.5, height * 0.6, ASSETS.DOOR_LOCKED)
-        .setScale(assetScale)
+        .setScale(assetScale * 0.4)
         .setDepth(15)
         .setInteractive();
 
@@ -276,7 +266,7 @@ export default class Island2 extends Phaser.Scene {
       this.currentBg = this.add.image(width / 2, height / 2, ASSETS.BG_ROOM_C).setDepth(0);
       
       this.currentNpc = this.add.sprite(width * 0.75, height * 0.75, ASSETS.NPC_SAGE)
-        .setScale(0.35 * assetScale)
+        .setScale(assetScale * 0.6)
         .setDepth(20);
       
       this.currentNpc.setInteractive().on('pointerdown', () => {
@@ -326,14 +316,14 @@ export default class Island2 extends Phaser.Scene {
           this, 
           this.currentNpc!.x, 
           this.currentNpc!.y - 60, 
-          "The forge burns bright!\nTap the portal to enter.",
+          "The forge burns bright!",
           this.currentNpc!
         );
       });
 
       // Increased zone size for easier clicking
       this.currentObject = this.add.sprite(width * 0.5, height * 0.5, ASSETS.DOOR_OPEN)
-        .setScale(assetScale)
+        .setScale(assetScale * 0.4)
         .setDepth(15)
         .setInteractive();
         
@@ -355,30 +345,30 @@ export default class Island2 extends Phaser.Scene {
     
     if (this.player) {
       this.player.setScale(assetScale);
-      this.player.x = 100;
+      this.player.x = width * 0.1;
       this.player.y = height * 0.7;
       this.player.container.setDepth(30);
     }
   }
 
-  private createQuestItem(scale: number) {
+  private createQuestItem(scale: number, width: number, height: number) {
     const itemKey = QUEST_DATA[2].room1Object;
     const item = new VisualCollectible(
       this, 
-      this.scale.width * 0.5, this.scale.height * 0.6, 
+      width * 0.8, height * 0.6, 
       itemKey, 
       'quest_item', 
       'item_2', 
       QUEST_DATA[2].color
     );
-    item.mainSprite.setScale(scale * 0.3); // Significantly reduced scale
+    item.mainSprite.setScale(scale * 0.25); // Significantly reduced scale
     item.setDepth(40);
     this.currentObject = item;
   }
 
-  update() {
+  update(time: number, delta: number) {
     if (!this.player) return;
-    this.handleMovement();
+    this.handleMovement(delta);
     
     if (this.currentRoom === 1 && !this.hasCollectedItem && this.currentObject instanceof VisualCollectible) {
       if (this.currentObject.isPlayerNear(this.player.x, this.player.y)) {
@@ -417,9 +407,9 @@ export default class Island2 extends Phaser.Scene {
     });
   }
 
-  private handleMovement() {
+  private handleMovement(delta: number) {
     if (!this.player) return;
-    const speed = GAME_CONFIG.PLAYER_SPEED;
+    const speed = (GAME_CONFIG.PLAYER_SPEED * delta) / 16;
     let moving = false;
     
     const pointer = this.input.activePointer;
@@ -449,7 +439,7 @@ export default class Island2 extends Phaser.Scene {
       
       if (this.currentNpc) {
         const npcDist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.currentNpc.x, this.currentNpc.y);
-        const minDist = 80;
+        const minDist = 40;
         if (npcDist < minDist) {
           const angle = Phaser.Math.Angle.Between(this.currentNpc.x, this.currentNpc.y, this.player.x, this.player.y);
           this.player.x = this.currentNpc.x + Math.cos(angle) * minDist;

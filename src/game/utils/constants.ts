@@ -14,7 +14,7 @@ export const GAME_CONFIG = {
   COLLECTIBLE_PULSE_DURATION: 1000,
   COLLECTIBLE_GLOW_SCALE: 1.2,
   DIALOGUE_DURATION: 3000,
-  TOTAL_QUESTS: 5
+  TOTAL_QUESTS: 3
 } as const;
 
 // Quest Definitions
@@ -45,20 +45,6 @@ export const QUEST_DATA: Record<number, {
     badge: 'Grove Guardian',
     room1Object: 'song-seed',
     color: 0x32CD32 // Lime Green
-  },
-  4: {
-    id: 4,
-    name: 'Quest 4: Tide Observatory',
-    badge: 'Tidecaller',
-    room1Object: 'moonstone-fragment',
-    color: 0x00BFFF // Deep Sky Blue
-  },
-  5: {
-    id: 5,
-    name: 'Quest 5: Storm Spire',
-    badge: 'Stormbinder',
-    room1Object: 'charged-rod',
-    color: 0xFFD700 // Gold
   },
   6: { // Meta Quest
     id: 6,
@@ -106,7 +92,5 @@ export const ASSETS = {
 export const ISLANDS = {
   ISLAND_1: QUEST_DATA[1],
   ISLAND_2: QUEST_DATA[2],
-  ISLAND_3: QUEST_DATA[3],
-  ISLAND_4: QUEST_DATA[4],
-  ISLAND_5: QUEST_DATA[5]
+  ISLAND_3: QUEST_DATA[3]
 };

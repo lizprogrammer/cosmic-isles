@@ -5,8 +5,6 @@ import AvatarCreator from './scenes/AvatarCreator'
 import Island1 from './scenes/Island1'
 import Island2 from './scenes/Island2'
 import Island3 from './scenes/Island3'
-import Island4 from './scenes/Island4'
-import Island5 from './scenes/Island5'
 import StarSanctum from './scenes/StarSanctum'
 import MintScreen from './scenes/MintScreen'
 
@@ -35,5 +33,5 @@ export const config: Phaser.Types.Core.GameConfig = {
     }
   },
 
-  scene: [Boot, MainMenu, AvatarCreator, Island1, Island2, Island3, Island4, Island5, StarSanctum, MintScreen]
+  scene: [Boot, MainMenu, AvatarCreator, Island1, Island2, Island3, StarSanctum, MintScreen]
 }
