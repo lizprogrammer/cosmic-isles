@@ -10,6 +10,8 @@ export default class RoomA extends Phaser.Scene {
   private dialogText?: Phaser.GameObjects.Text;
   private background?: Phaser.GameObjects.Image;
   private touchTarget?: { x: number; y: number };
+  private debugText?: Phaser.GameObjects.Text;
+  private debugMode: boolean = true; // Set to false to disable debug output
 
   constructor() {
     super("RoomA");
@@ -79,6 +81,26 @@ export default class RoomA extends Phaser.Scene {
       color: "#aaaaaa"
     }).setOrigin(0.5).setDepth(100);
 
+    // Debug text for troubleshooting
+    if (this.debugMode) {
+      this.debugText = this.add.text(10, 10, "Debug: Waiting for input...", {
+        fontSize: "12px",
+        color: "#00ff00",
+        backgroundColor: "#000000",
+        padding: { x: 5, y: 5 }
+      }).setDepth(1000).setScrollFactor(0);
+    }
+
+    // Log input system info
+    if (this.debugMode) {
+      console.log("🔍 Input System Debug Info:");
+      console.log("- Keyboard available:", !!this.input.keyboard);
+      console.log("- Active pointer:", !!this.input.activePointer);
+      const gameConfig = (this.game.config as any);
+      console.log("- Touch enabled:", gameConfig.input?.touch !== false);
+      console.log("- Mouse enabled:", gameConfig.input?.mouse !== false);
+    }
+
     // TOUCH-AND-DRAG movement (mobile fix)
     // Use the touch zone for reliable mobile touch support
     touchZone.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
@@ -87,6 +109,11 @@ export default class RoomA extends Phaser.Scene {
       // Get world coordinates from pointer
       const worldX = pointer.worldX;
       const worldY = pointer.worldY;
+      
+      if (this.debugMode) {
+        console.log("🟢 Zone pointerdown:", { worldX, worldY, x: pointer.x, y: pointer.y, isDown: pointer.isDown });
+        this.updateDebugText(`Zone DOWN: (${Math.round(worldX)}, ${Math.round(worldY)})`);
+      }
       
       // Check if we're touching an interactive object
       const hitGuidebot = this.guidebot?.getBounds().contains(worldX, worldY);
@@ -98,6 +125,13 @@ export default class RoomA extends Phaser.Scene {
           x: Phaser.Math.Clamp(worldX, 50, 750),
           y: Phaser.Math.Clamp(worldY, 50, 550)
         };
+        if (this.debugMode) {
+          console.log("✅ Touch target set:", this.touchTarget);
+        }
+      } else {
+        if (this.debugMode) {
+          console.log("⚠️ Hit interactive object, ignoring touch");
+        }
       }
     });
 
@@ -106,6 +140,10 @@ export default class RoomA extends Phaser.Scene {
       if (pointer.isDown) {
         const worldX = pointer.worldX;
         const worldY = pointer.worldY;
+        
+        if (this.debugMode && this.touchTarget) {
+          this.updateDebugText(`Zone MOVE: (${Math.round(worldX)}, ${Math.round(worldY)})`);
+        }
         
         // Check if we're touching an interactive object
         const hitGuidebot = this.guidebot?.getBounds().contains(worldX, worldY);
@@ -122,6 +160,10 @@ export default class RoomA extends Phaser.Scene {
 
     touchZone.on("pointerup", () => {
       // Clear touch target when touch ends
+      if (this.debugMode) {
+        console.log("🔴 Zone pointerup");
+        this.updateDebugText("Zone UP - Touch cleared");
+      }
       this.touchTarget = undefined;
     });
 
@@ -132,6 +174,11 @@ export default class RoomA extends Phaser.Scene {
       const worldX = pointer.worldX;
       const worldY = pointer.worldY;
       
+      if (this.debugMode) {
+        console.log("🟢 Global pointerdown:", { worldX, worldY, x: pointer.x, y: pointer.y });
+        this.updateDebugText(`Global DOWN: (${Math.round(worldX)}, ${Math.round(worldY)})`);
+      }
+      
       const hitGuidebot = this.guidebot?.getBounds().contains(worldX, worldY);
       const hitStone = this.stone?.getBounds().contains(worldX, worldY);
       
@@ -140,6 +187,9 @@ export default class RoomA extends Phaser.Scene {
           x: Phaser.Math.Clamp(worldX, 50, 750),
           y: Phaser.Math.Clamp(worldY, 50, 550)
         };
+        if (this.debugMode) {
+          console.log("✅ Global touch target set:", this.touchTarget);
+        }
       }
     });
 
@@ -161,6 +211,10 @@ export default class RoomA extends Phaser.Scene {
     });
 
     this.input.on("pointerup", () => {
+      if (this.debugMode) {
+        console.log("🔴 Global pointerup");
+        this.updateDebugText("Global UP - Touch cleared");
+      }
       this.touchTarget = undefined;
     });
 
@@ -217,6 +271,18 @@ export default class RoomA extends Phaser.Scene {
       this.cursors.up?.isDown || 
       this.cursors.down?.isDown
     );
+    
+    // Debug: Update debug text with current state
+    if (this.debugMode && this.debugText) {
+      const pointerInfo = activePointer ? 
+        `Active: (${Math.round(activePointer.worldX)}, ${Math.round(activePointer.worldY)}) isDown: ${activePointer.isDown}` : 
+        "No active pointer";
+      const targetInfo = this.touchTarget ? 
+        `Target: (${Math.round(this.touchTarget.x)}, ${Math.round(this.touchTarget.y)})` : 
+        "No target";
+      const keyboardInfo = isKeyboardMoving ? "Keyboard active" : "Keyboard idle";
+      this.debugText.setText(`Debug:\n${pointerInfo}\n${targetInfo}\n${keyboardInfo}`);
+    }
     
     // Only use touch if keyboard is not being used (to avoid conflicts on desktop)
     if (!isKeyboardMoving && activePointer && activePointer.isDown) {
@@ -314,5 +380,18 @@ export default class RoomA extends Phaser.Scene {
     );
 
     return distance < 100;
+  }
+
+  private updateDebugText(message: string) {
+    if (this.debugText) {
+      const currentText = this.debugText.text;
+      this.debugText.setText(`${currentText}\n${message}`);
+      
+      // Keep only last 5 lines
+      const lines = this.debugText.text.split('\n');
+      if (lines.length > 5) {
+        this.debugText.setText(lines.slice(-5).join('\n'));
+      }
+    }
   }
 }
