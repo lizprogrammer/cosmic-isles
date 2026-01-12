@@ -10,7 +10,10 @@ export default class RoomA extends Phaser.Scene {
   private dialogText?: Phaser.GameObjects.Text;
   private touchTarget?: { x: number; y: number };
   private debugText?: Phaser.GameObjects.Text;
-  private debugMode: boolean = true; // Set to false to disable debug output
+  private debugMode: boolean = false; // Set to false to disable debug output
+  private pointerStartPos?: { x: number; y: number };
+  private lastHintTime: number = 0;
+  private lastDistanceToStone: number = 9999;
 
   constructor() {
     super("RoomA");
@@ -33,7 +36,7 @@ export default class RoomA extends Phaser.Scene {
     // Create a full-screen invisible zone for touch input
     const touchZone = this.add.zone(400, 300, 800, 600)
       .setInteractive({ useHandCursor: false })
-      .setDepth(1000); // High depth but invisible
+      .setDepth(-1); // Low depth so it doesn't block interactive objects
 
     // Player character
     this.player = this.add.sprite(100, 500, "guidebot")
@@ -50,7 +53,7 @@ export default class RoomA extends Phaser.Scene {
     this.stone = this.add.sprite(600, 320, "stone")
       .setInteractive()
       .setScale(0.5)
-      .setDepth(5);
+      .setDepth(15); // Higher depth than player (10) so it's always clickable
 
     // Glow animation
     this.tweens.add({
@@ -109,28 +112,15 @@ export default class RoomA extends Phaser.Scene {
       const worldX = pointer.worldX;
       const worldY = pointer.worldY;
       
+      // Always track pointer start position for drag detection
+      this.pointerStartPos = {
+        x: worldX,
+        y: worldY
+      };
+      
       if (this.debugMode) {
         console.log("🟢 Zone pointerdown:", { worldX, worldY, x: pointer.x, y: pointer.y, isDown: pointer.isDown });
         this.updateDebugText(`Zone DOWN: (${Math.round(worldX)}, ${Math.round(worldY)})`);
-      }
-      
-      // Check if we're touching an interactive object
-      const hitGuidebot = this.guidebot?.getBounds().contains(worldX, worldY);
-      const hitStone = this.stone?.getBounds().contains(worldX, worldY);
-      
-      // Only set touch target if not touching an interactive object
-      if (!hitGuidebot && !hitStone) {
-        this.touchTarget = {
-          x: Phaser.Math.Clamp(worldX, 50, 750),
-          y: Phaser.Math.Clamp(worldY, 50, 550)
-        };
-        if (this.debugMode) {
-          console.log("✅ Touch target set:", this.touchTarget);
-        }
-      } else {
-        if (this.debugMode) {
-          console.log("⚠️ Hit interactive object, ignoring touch");
-        }
       }
     });
 
@@ -140,7 +130,7 @@ export default class RoomA extends Phaser.Scene {
         const worldX = pointer.worldX;
         const worldY = pointer.worldY;
         
-        if (this.debugMode && this.touchTarget) {
+        if (this.debugMode) {
           this.updateDebugText(`Zone MOVE: (${Math.round(worldX)}, ${Math.round(worldY)})`);
         }
         
@@ -148,11 +138,15 @@ export default class RoomA extends Phaser.Scene {
         const hitGuidebot = this.guidebot?.getBounds().contains(worldX, worldY);
         const hitStone = this.stone?.getBounds().contains(worldX, worldY);
         
+        // Always update touch target during drag (don't require it to exist first)
         if (!hitGuidebot && !hitStone) {
           this.touchTarget = {
             x: Phaser.Math.Clamp(worldX, 50, 750),
             y: Phaser.Math.Clamp(worldY, 50, 550)
           };
+          if (this.debugMode) {
+            console.log("✅ Touch target updated during drag:", this.touchTarget);
+          }
         }
       }
     });
@@ -168,32 +162,20 @@ export default class RoomA extends Phaser.Scene {
 
     // Also add global input handlers as backup for mobile
     this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-      if (!this.player || this.touchTarget) return; // Don't override if zone already handled it
-      
-      const worldX = pointer.worldX;
-      const worldY = pointer.worldY;
+      // Track where pointer started for drag detection
+      this.pointerStartPos = {
+        x: pointer.worldX,
+        y: pointer.worldY
+      };
       
       if (this.debugMode) {
-        console.log("🟢 Global pointerdown:", { worldX, worldY, x: pointer.x, y: pointer.y });
-        this.updateDebugText(`Global DOWN: (${Math.round(worldX)}, ${Math.round(worldY)})`);
-      }
-      
-      const hitGuidebot = this.guidebot?.getBounds().contains(worldX, worldY);
-      const hitStone = this.stone?.getBounds().contains(worldX, worldY);
-      
-      if (!hitGuidebot && !hitStone) {
-        this.touchTarget = {
-          x: Phaser.Math.Clamp(worldX, 50, 750),
-          y: Phaser.Math.Clamp(worldY, 50, 550)
-        };
-        if (this.debugMode) {
-          console.log("✅ Global touch target set:", this.touchTarget);
-        }
+        console.log("🟢 Global pointerdown:", { worldX: pointer.worldX, worldY: pointer.worldY });
       }
     });
 
     this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
-      if (pointer.isDown && this.touchTarget) {
+      // Update touch target during drag (don't require touchTarget to exist first)
+      if (pointer.isDown) {
         const worldX = pointer.worldX;
         const worldY = pointer.worldY;
         
@@ -205,6 +187,9 @@ export default class RoomA extends Phaser.Scene {
             x: Phaser.Math.Clamp(worldX, 50, 750),
             y: Phaser.Math.Clamp(worldY, 50, 550)
           };
+          if (this.debugMode) {
+            console.log("✅ Global touch target updated during drag:", this.touchTarget);
+          }
         }
       }
     });
@@ -212,9 +197,9 @@ export default class RoomA extends Phaser.Scene {
     this.input.on("pointerup", () => {
       if (this.debugMode) {
         console.log("🔴 Global pointerup");
-        this.updateDebugText("Global UP - Touch cleared");
       }
       this.touchTarget = undefined;
+      this.pointerStartPos = undefined;
     });
 
 
@@ -229,8 +214,22 @@ export default class RoomA extends Phaser.Scene {
     });
 
     // Stone interaction
-    this.stone.on("pointerdown", () => {
+    this.stone.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+      console.log("🔷 STONE CLICKED!");
+      
+      const distance = this.player ? Phaser.Math.Distance.Between(
+        this.player.x,
+        this.player.y,
+        this.stone!.x,
+        this.stone!.y
+      ) : 999;
+      
+      console.log("Stone clicked! Distance:", Math.round(distance), "Required: < 120");
+      console.log("Player position:", this.player?.x, this.player?.y);
+      console.log("Stone position:", this.stone?.x, this.stone?.y);
+      
       if (this.isPlayerNear(this.stone!)) {
+        console.log("✅ Player is near! Collecting stone...");
         playerState.hasStone = true;
         playerState.score += 10;
         playerState.itemsCollected.push("glowing_stone");
@@ -241,16 +240,27 @@ export default class RoomA extends Phaser.Scene {
           alpha: 0,
           duration: 500,
           onComplete: () => {
+            console.log("✅ Stone animation complete, transitioning to RoomB...");
             this.stone?.destroy();
             this.showDialog("Stone acquired! Proceeding to Island Two...");
 
             this.time.delayedCall(2000, () => {
+              console.log("✅ Starting RoomB scene...");
               this.scene.start("RoomB");
             });
           }
         });
       } else {
-        this.showDialog("Get closer to collect the stone!");
+        console.log("❌ Player too far away");
+        // Show how much closer they need to get
+        const distanceNeeded = Math.round(distance - 120);
+        if (distanceNeeded > 50) {
+          this.showDialog(`Too far! Drag closer to the stone.`);
+        } else if (distanceNeeded > 20) {
+          this.showDialog("Getting close! Keep dragging closer!");
+        } else {
+          this.showDialog("Almost there! Just a tiny bit closer!");
+        }
       }
     });
   }
@@ -261,8 +271,7 @@ export default class RoomA extends Phaser.Scene {
     const speed = 3;
     let moving = false;
 
-    // Touch-based movement (mobile)
-    // Prioritize touch input over keyboard for mobile devices
+    // Touch/Mouse-based movement - same pattern as keyboard
     const activePointer = this.input.activePointer;
     const isKeyboardMoving = this.cursors && (
       this.cursors.left?.isDown || 
@@ -271,34 +280,32 @@ export default class RoomA extends Phaser.Scene {
       this.cursors.down?.isDown
     );
     
-    // Debug: Update debug text with current state
-    if (this.debugMode && this.debugText) {
-      const pointerInfo = activePointer ? 
-        `Active: (${Math.round(activePointer.worldX)}, ${Math.round(activePointer.worldY)}) isDown: ${activePointer.isDown}` : 
-        "No active pointer";
-      const targetInfo = this.touchTarget ? 
-        `Target: (${Math.round(this.touchTarget.x)}, ${Math.round(this.touchTarget.y)})` : 
-        "No target";
-      const keyboardInfo = isKeyboardMoving ? "Keyboard active" : "Keyboard idle";
-      this.debugText.setText(`Debug:\n${pointerInfo}\n${targetInfo}\n${keyboardInfo}`);
-    }
-    
-    // Only use touch if keyboard is not being used (to avoid conflicts on desktop)
-    if (!isKeyboardMoving && activePointer && activePointer.isDown) {
+    // Only use pointer if keyboard is not being used (to avoid conflicts on desktop)
+    if (!isKeyboardMoving && activePointer && activePointer.isDown && this.pointerStartPos) {
       const worldX = activePointer.worldX;
       const worldY = activePointer.worldY;
       
-      // Check if we're touching an interactive object
+      // Check if pointer has moved significantly (dragging) vs just clicking
+      const dragDistance = Math.sqrt(
+        Math.pow(worldX - this.pointerStartPos.x, 2) + 
+        Math.pow(worldY - this.pointerStartPos.y, 2)
+      );
+      const isDragging = dragDistance > 10; // Only treat as drag if moved more than 10 pixels
+      
+      // Check if we're currently over an interactive object
       const hitGuidebot = this.guidebot?.getBounds().contains(worldX, worldY);
       const hitStone = this.stone?.getBounds().contains(worldX, worldY);
       
-      if (!hitGuidebot && !hitStone) {
+      // Allow movement when dragging (not just clicking on objects)
+      // Only block movement if clicking directly on guidebot (not dragging)
+      if (isDragging || !hitGuidebot) {
         const dx = worldX - this.player.x;
         const dy = worldY - this.player.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
-
-        // Move toward touch position if not already there
+        
+        // Move directly toward pointer position each frame (like keyboard movement)
         if (distance > speed) {
+          // Normalize direction and move
           const angle = Math.atan2(dy, dx);
           this.player.x += Math.cos(angle) * speed;
           this.player.y += Math.sin(angle) * speed;
@@ -306,27 +313,41 @@ export default class RoomA extends Phaser.Scene {
           // Flip sprite based on direction
           this.player.setFlipX(dx < 0);
           moving = true;
+        } else if (distance > 0) {
+          // Very close, move remaining distance
+          this.player.x = worldX;
+          this.player.y = worldY;
+          moving = true;
         }
       }
-    } else if (this.touchTarget) {
-      // Use stored touch target from event handlers
-      const dx = this.touchTarget.x - this.player.x;
-      const dy = this.touchTarget.y - this.player.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      // Move toward touch target if not already there
-      if (distance > speed) {
-        const angle = Math.atan2(dy, dx);
-        this.player.x += Math.cos(angle) * speed;
-        this.player.y += Math.sin(angle) * speed;
-        
-        // Flip sprite based on direction
-        this.player.setFlipX(dx < 0);
-        moving = true;
-      } else {
-        // Reached target, clear it
-        this.touchTarget = undefined;
+    }
+    
+    // Show hints when getting closer to the stone
+    if (this.stone && moving) {
+      const distanceToStone = Phaser.Math.Distance.Between(
+        this.player.x,
+        this.player.y,
+        this.stone.x,
+        this.stone.y
+      );
+      
+      const currentTime = this.time.now;
+      
+      // Show hints when getting closer
+      if (distanceToStone < this.lastDistanceToStone && currentTime - this.lastHintTime > 3000) {
+        if (distanceToStone < 120) {
+          this.showDialog("Perfect! Now click the stone to collect it!");
+          this.lastHintTime = currentTime;
+        } else if (distanceToStone < 200 && distanceToStone > 120) {
+          this.showDialog("Getting closer! Keep moving toward the glowing stone.");
+          this.lastHintTime = currentTime;
+        } else if (distanceToStone < 300 && distanceToStone > 200) {
+          this.showDialog("You're heading the right way!");
+          this.lastHintTime = currentTime;
+        }
       }
+      
+      this.lastDistanceToStone = distanceToStone;
     }
 
     // Keyboard movement (desktop)
@@ -348,6 +369,20 @@ export default class RoomA extends Phaser.Scene {
         this.player.y += speed;
         moving = true;
       }
+    }
+    
+    // Debug: Update debug text with current state
+    if (this.debugMode && this.debugText) {
+      const pointerInfo = activePointer ? 
+        `Touch: (${Math.round(activePointer.worldX)}, ${Math.round(activePointer.worldY)}) isDown: ${activePointer.isDown}` : 
+        "No touch";
+      const playerInfo = `Player: (${Math.round(this.player.x)}, ${Math.round(this.player.y)})`;
+      const dragInfo = this.pointerStartPos && activePointer?.isDown ? 
+        `Drag: ${Math.round(Math.sqrt(Math.pow(activePointer.worldX - this.pointerStartPos.x, 2) + Math.pow(activePointer.worldY - this.pointerStartPos.y, 2)))}px` : 
+        "Not dragging";
+      const movingInfo = moving ? "MOVING" : "STOPPED";
+      const keyboardInfo = isKeyboardMoving ? "Keyboard active" : "Keyboard idle";
+      this.debugText.setText(`Debug:\n${pointerInfo}\n${playerInfo}\n${dragInfo}\n${movingInfo}\n${keyboardInfo}`);
     }
 
     // Keep player in bounds
@@ -378,7 +413,7 @@ export default class RoomA extends Phaser.Scene {
       target.y
     );
 
-    return distance < 100;
+    return distance < 120; // Increased from 100 to 120 for easier collection
   }
 
   private updateDebugText(message: string) {
