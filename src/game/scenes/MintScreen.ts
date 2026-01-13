@@ -3,6 +3,8 @@ import { questState } from '../state/QuestState';
 import { gameState, getTotalPlayTime } from '../state/GameState';
 import { playerState } from '../state/PlayerState';
 
+import { connectWallet, switchToBase, sendMintTransaction } from '../../utils/web3';
+
 /**
  * Mint Screen - Final scene showing NFT preview and mint button
  */
@@ -171,70 +173,88 @@ export default class MintScreen extends Phaser.Scene {
     this.add.text(cx, imageY + 140, statsText, textStyle).setOrigin(0.5, 0).setDepth(6);
   }
 
-  // Helper method removed as it was replaced by createStyledButton usage directly in create
-  private dummy() {} // Placeholder to ensure replacement block is clean
-
   private async mintNFT(): Promise<void> {
     console.log('🎨 Initiating NFT mint...');
 
+    // 1. UI Feedback IMMEDIATE
     const width = this.scale.width;
     const height = this.scale.height;
     
-    // Show loading state
-    const loadingText = this.add.text(width / 2, height / 2, 'Minting your achievement...', {
+    // Create loading overlay
+    const loadingOverlay = this.add.rectangle(width/2, height/2, width, height, 0x000000, 0.8).setDepth(250);
+    const loadingText = this.add.text(width / 2, height / 2, 'Connecting Wallet...', {
       fontSize: '24px',
       color: '#FFD700',
       fontFamily: 'Arial, sans-serif',
-      backgroundColor: '#000000',
-      padding: { x: 20, y: 10 }
-    }).setOrigin(0.5).setDepth(100);
+    }).setOrigin(0.5).setDepth(251);
 
     try {
-      // Prepare NFT metadata
-      const metadata = {
-        playerName: playerState.playerName || 'Star Walker',
-        avatar: {
-          bodyColor: playerState.bodyColor,
-          outfit: playerState.outfit,
-          accessory: playerState.accessory
-        },
-        badges: questState.getEarnedBadges(),
-        completionTime: getTotalPlayTime(),
-        completionSpeed: gameState.completionSpeed,
-        timestamp: Date.now(),
-        allQuestsComplete: questState.areAllIslandsComplete()
-      };
-
-      // Call mint API
-      const response = await fetch('/api/mint', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(metadata)
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log('✅ NFT minted successfully:', result);
-        
-        loadingText.setText('✅ NFT Minted Successfully!');
-        
-        this.time.delayedCall(2000, () => {
-          loadingText.setText('Thank you for playing Cosmic Isles! 🌌');
+      // 2. Connect Wallet
+      const address = await connectWallet();
+      if (!address) { 
+        loadingText.setText('Wallet connection cancelled.');
+        this.time.delayedCall(1500, () => {
+            loadingOverlay.destroy();
+            loadingText.destroy();
         });
-
-        // Could redirect to NFT viewer or collection page
-        this.time.delayedCall(4000, () => {
-          // For Farcaster, might want to close or show share options
-          this.showShareOptions();
-        });
-      } else {
-        throw new Error('Mint failed');
+        return; 
       }
+
+      // 3. Switch to Base Chain
+      loadingText.setText('Switching to Base...');
+      const switched = await switchToBase(); 
+      if (!switched) {
+        loadingText.setText('Network switch failed.');
+        this.time.delayedCall(1500, () => {
+            loadingOverlay.destroy();
+            loadingText.destroy();
+        });
+        return;
+      }
+
+      // 4. Send Transaction
+      loadingText.setText('Please confirm transaction in wallet...');
+      // Placeholder contract for demo - User needs to replace with deployed contract
+      const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000"; 
+      const PRICE_ETH = "0.0001"; // Small charge as requested
+
+      const hash = await sendMintTransaction(CONTRACT_ADDRESS, PRICE_ETH, address);
+
+      if (hash) {
+        loadingText.setText('Transaction Sent!\nMinting...');
+        
+        // 5. Optional: Notify backend
+        const metadata = {
+            playerName: playerState.playerName || 'Star Walker',
+            badges: questState.getEarnedBadges(),
+            completionTime: getTotalPlayTime(),
+            txHash: hash,
+            wallet: address
+        };
+        
+        // Fire and forget backend notification
+        fetch('/api/mint', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(metadata)
+        }).catch(err => console.error(err));
+
+        this.time.delayedCall(2000, () => {
+             loadingOverlay.destroy();
+             loadingText.destroy();
+             this.showShareOptions();
+        });
+
+      } else {
+         throw new Error("Transaction rejected or failed");
+      }
+
     } catch (error) {
       console.error('❌ Mint error:', error);
-      loadingText.setText('❌ Mint failed. Please try again.');
+      loadingText.setText('Mint failed. Please try again.');
       
       this.time.delayedCall(2000, () => {
+        loadingOverlay.destroy();
         loadingText.destroy();
       });
     }
@@ -244,33 +264,46 @@ export default class MintScreen extends Phaser.Scene {
     const width = this.scale.width;
     const height = this.scale.height;
     const cx = width / 2;
+    const cy = height / 2;
 
-    const shareText = this.add.text(cx, height / 2, 
-      '🎉 Share your achievement!\n\n' +
-      'I completed all 3 Cosmic Isles and\n' +
-      'reforged the Shattered Star! 🌟',
+    // Overlay background
+    this.add.rectangle(cx, cy, width, height, 0x000000, 0.9).setDepth(300);
+
+    const shareTitle = this.add.text(cx, cy - 80, 
+      '🎉 STAR REFORGED! 🎉',
       {
-        fontSize: '20px',
-        color: '#ffffff',
+        fontSize: '32px',
+        color: '#FFD700',
         fontFamily: 'Arial, sans-serif',
-        align: 'center',
-        backgroundColor: '#000000',
-        padding: { x: 30, y: 20 }
+        fontStyle: 'bold'
       }
-    ).setOrigin(0.5).setDepth(100);
+    ).setOrigin(0.5).setDepth(301);
 
-    const playAgainButton = this.add.text(cx, height * 0.75, '🔄 Play Again', {
+    // Share Button
+    const shareButton = this.createStyledButton(cx, cy, 'Cast Achievement', 0x9D4EDD, () => {
+        const text = "I just reforged the Shattered Star in Cosmic Isles! 🌟\n\nPlay now:";
+        const url = "https://farcaster.xyz/miniapps/Hys_Qc3Q5KF_/cosmic-isles";
+        const shareUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(url)}`;
+        
+        window.open(shareUrl, '_blank');
+    });
+    shareButton.setDepth(301);
+
+    // Play Again Button
+    const playAgainButton = this.add.text(cx, cy + 80, '🔄 Play Again', {
       fontSize: '24px',
-      color: '#FFD700',
+      color: '#aaaaaa',
       fontFamily: 'Arial, sans-serif',
-      backgroundColor: '#000000',
       padding: { x: 20, y: 10 }
-    }).setOrigin(0.5).setDepth(100).setInteractive();
+    }).setOrigin(0.5).setDepth(301).setInteractive();
 
     playAgainButton.on('pointerdown', () => {
       // Reset game state
       questState.reset();
       this.scene.start('Boot');
     });
+    
+    playAgainButton.on('pointerover', () => playAgainButton.setColor('#ffffff'));
+    playAgainButton.on('pointerout', () => playAgainButton.setColor('#aaaaaa'));
   }
 }
