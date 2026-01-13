@@ -168,7 +168,7 @@ export default class Island3 extends Phaser.Scene {
 
       if (!this.hasCollectedItem) {
         this.time.delayedCall(500, () => {
-          this.dialogueManager.showAnnouncement("NEW QUEST: WHISPERING GROVE\nFIND THE HIDDEN SEED!");
+          this.dialogueManager.showAnnouncement("NEW QUEST: WHISPERING GROVE\nCHECK THE FLOWER PILES!");
         });
       }
 
@@ -354,14 +354,55 @@ export default class Island3 extends Phaser.Scene {
   private createQuestItem(scale: number) {
     const itemKey = QUEST_DATA[3].room1Object;
     
-    // Random position for "Hidden Seed"
-    const margin = 200;
-    const randomX = Phaser.Math.Between(margin, this.scale.width - margin);
-    const randomY = Phaser.Math.Between(this.scale.height * 0.3, this.scale.height * 0.8);
+    // 3 Possible positions
+    const positions = [
+        { x: this.scale.width * 0.2, y: this.scale.height * 0.6 },
+        { x: this.scale.width * 0.5, y: this.scale.height * 0.7 },
+        { x: this.scale.width * 0.8, y: this.scale.height * 0.6 }
+    ];
+    
+    // Pick one winner
+    const winningIndex = Phaser.Math.Between(0, 2);
+    
+    positions.forEach((pos, index) => {
+        // Create Flower Pile
+        const pile = this.add.graphics();
+        pile.fillStyle(0xFF69B4, 1); // Pink flowers
+        pile.fillCircle(0, 0, 30 * scale);
+        pile.setPosition(pos.x, pos.y);
+        pile.setDepth(45);
+        pile.setInteractive(new Phaser.Geom.Circle(0, 0, 30 * scale), Phaser.Geom.Circle.Contains);
+        
+        pile.on('pointerdown', () => {
+            if (index === winningIndex) {
+                // Winner
+                this.tweens.add({
+                    targets: pile,
+                    alpha: 0,
+                    duration: 500,
+                    onComplete: () => {
+                        pile.destroy();
+                        this.spawnRealItem(scale, pos.x, pos.y, itemKey);
+                    }
+                });
+            } else {
+                // Loser
+                this.dialogueManager.show("Nothing here...");
+                this.tweens.add({
+                    targets: pile,
+                    scale: 0.8,
+                    yoyo: true,
+                    duration: 100
+                });
+            }
+        });
+    });
+  }
 
+  private spawnRealItem(scale: number, x: number, y: number, itemKey: string) {
     const item = new VisualCollectible(
       this, 
-      randomX, randomY, 
+      x, y, 
       itemKey, 
       'quest_item', 
       'item_3', 

@@ -10,11 +10,17 @@ export class ProgressUI {
   private container: Phaser.GameObjects.Container;
   private badgeIcons: Phaser.GameObjects.Graphics[] = [];
   private progressText?: Phaser.GameObjects.Text;
+  private collectionContainer: Phaser.GameObjects.Container;
+  private collectedItemCount: number = 0;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
     this.container = scene.add.container(0, 0);
     this.container.setDepth(90);
+    
+    this.collectionContainer = scene.add.container(20, 50);
+    this.container.add(this.collectionContainer);
+    
     this.createUI();
   }
 
@@ -90,6 +96,56 @@ export class ProgressUI {
       });
     }
     return points;
+  }
+
+  /**
+   * Add a collected item icon to the UI
+   */
+  public addCollectedItem(textureKey: string): void {
+    const iconSize = 15; // Much smaller icons
+    const spacing = 5;
+    const x = this.collectedItemCount * (iconSize + spacing);
+    
+    // Background for item
+    const bg = this.scene.add.graphics();
+    bg.fillStyle(0x000000, 0.5);
+    bg.fillCircle(x + iconSize/2, iconSize/2, iconSize/2 + 2);
+    bg.lineStyle(1.5, 0xFFD700, 1);
+    bg.strokeCircle(x + iconSize/2, iconSize/2, iconSize/2 + 2);
+    this.collectionContainer.add(bg);
+
+    // Item Icon
+    const icon = this.scene.add.sprite(x + iconSize/2, iconSize/2, textureKey);
+    
+    // Safely scale the icon to fit within iconSize
+    if (icon.width > 0 && icon.height > 0) {
+        const scale = iconSize / Math.max(icon.width, icon.height);
+        icon.setScale(scale);
+    } else {
+        // Fallback if dimensions aren't ready
+        icon.setDisplaySize(iconSize, iconSize);
+    }
+    
+    this.collectionContainer.add(icon);
+
+    // Animation
+    this.scene.tweens.add({
+        targets: [bg, icon],
+        scaleX: { from: 0, to: 1 },
+        scaleY: { from: 0, to: 1 },
+        duration: 500,
+        ease: 'Back.out'
+    });
+
+    this.collectedItemCount++;
+  }
+
+  /**
+   * Clear all collected items (for reset/reload)
+   */
+  public clearCollectedItems(): void {
+    this.collectionContainer.removeAll(true);
+    this.collectedItemCount = 0;
   }
 
   /**

@@ -33,5 +33,5 @@ export const config: Phaser.Types.Core.GameConfig = {
     }
   },
 
-  scene: [Boot, MainMenu, AvatarCreator, Island1, Island2, Island3, StarSanctum, MintScreen]
+  scene: [Boot, MainMenu, AvatarCreator, Island1, StarSanctum, MintScreen]
 }

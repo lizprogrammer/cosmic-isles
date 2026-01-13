@@ -26,6 +26,9 @@ export default class StarSanctum extends Phaser.Scene {
     this.generator = new AssetGenerator(this);
     this.generator.generateGlobalAssets();
     this.generator.generateStarSanctumAssets();
+    
+    // Preload the reformed star image
+    this.load.image('reformed-star', '/sprites/star-fragment.png');
   }
 
   create() {
@@ -134,41 +137,40 @@ export default class StarSanctum extends Phaser.Scene {
     // Hide fragments
     this.starFragments.forEach(f => f.setVisible(false));
 
-    // Create magnificent reformed star
-    this.reformedStar = this.add.graphics();
-    this.reformedStar.setPosition(cx, cy); // Use position
-    this.reformedStar.setDepth(20);
+    // Create magnificent reformed star using the sprite
+    const star = this.add.sprite(cx, cy, 'reformed-star');
+    star.setDepth(20);
+    star.setScale(0.5); // Initial scale, adjust as needed based on image size
 
-    // Multi-layered star
-    const colors = [
-      ISLANDS.ISLAND_1.color,
-      ISLANDS.ISLAND_2.color,
-      ISLANDS.ISLAND_3.color
-    ];
-
-    colors.forEach((color, index) => {
-      const size = 80 - (index * 10);
-      this.reformedStar!.fillStyle(color, 0.8);
-      this.reformedStar!.fillCircle(0, 0, size);
-    });
-
-    // Add white core
-    this.reformedStar.fillStyle(0xffffff, 1);
-    this.reformedStar.fillCircle(0, 0, 20);
-
-    // Glow effect
+    // Glow effect (tweening the sprite)
     this.tweens.add({
-      targets: this.reformedStar,
-      scaleX: 1.2,
-      scaleY: 1.2,
-      alpha: 0.7,
+      targets: star,
+      scaleX: 0.6,
+      scaleY: 0.6,
+      alpha: 1, // Keep full alpha or pulse it
       duration: 1000,
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut'
     });
 
+    // Pulse alpha slightly for extra effect
+    this.tweens.add({
+        targets: star,
+        alpha: 0.8,
+        duration: 1500,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+    });
+
     // Particle burst
+    const colors = [
+      ISLANDS.ISLAND_1.color,
+      ISLANDS.ISLAND_2.color,
+      ISLANDS.ISLAND_3.color
+    ];
+
     const particles = this.add.particles(cx, cy, 'pixel', {
       speed: { min: 50, max: 200 },
       scale: { start: 3, end: 0 },

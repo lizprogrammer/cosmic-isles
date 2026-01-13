@@ -41,6 +41,7 @@ export class VisualCollectible extends Phaser.GameObjects.Container {
     this.add(this.glowCircle);
 
     // Floating animation
+    // Can be disabled for moving items
     this.floatTween = scene.tweens.add({
       targets: this,
       y: y - 10,
@@ -69,6 +70,13 @@ export class VisualCollectible extends Phaser.GameObjects.Container {
       new Phaser.Geom.Circle(0, 0, 50),
       Phaser.Geom.Circle.Contains
     );
+  }
+
+  public stopFloating(): void {
+    if (this.floatTween) {
+        this.floatTween.stop();
+        this.floatTween = undefined;
+    }
   }
 
   private addSparkles(color: number): void {

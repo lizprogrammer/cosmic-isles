@@ -29,7 +29,7 @@ export const QUEST_DATA: Record<number, {
     id: 1,
     name: 'Quest 1: Crystal Isle',
     badge: 'Crystal Keeper',
-    room1Object: 'glowing-stone',
+    room1Object: 'glowing-stone', // This is used to load image
     color: 0xA020F0 // Purple
   },
   2: {
@@ -85,7 +85,10 @@ export const ASSETS = {
   NPC_SAGE: 'npc-starsage',
   PORTAL: 'portal',
   DOOR_LOCKED: 'door-locked',
-  DOOR_OPEN: 'door-open'
+  DOOR_OPEN: 'door-open',
+  BUSHES: 'bushes',
+  FLOWERS: 'flower-pile',
+  FLOATING_EMBER: 'floating-ember-core'
 } as const;
 
 // Keep ISLANDS constant for compatibility if other files use it, or map it to QUEST_DATA

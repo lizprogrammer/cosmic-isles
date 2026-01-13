@@ -16,7 +16,7 @@ export interface QuestStateData {
 }
 
 class QuestStateManager {
-  private data: QuestStateData = {
+  public data: QuestStateData = {
     island1: {
       completed: false,
       badgeEarned: false,

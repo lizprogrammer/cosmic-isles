@@ -32,7 +32,7 @@ export default class Island1 extends Phaser.Scene {
   
   // Logic Flags
   private canExit: boolean = false; 
-  private hasCollectedItem: boolean = false;
+  private collectedItems: number = 0; // Track 3 items
   private pointerStartPos?: { x: number; y: number };
 
   constructor() {
@@ -54,10 +54,15 @@ export default class Island1 extends Phaser.Scene {
     this.load.image(ASSETS.PORTAL, '/sprites/portal.png');
     this.load.image(ASSETS.DOOR_LOCKED, '/sprites/door-locked.png');
     this.load.image(ASSETS.DOOR_OPEN, '/sprites/door-open.png');
+    this.load.image(ASSETS.BUSHES, '/sprites/bushes.png');
+    this.load.image(ASSETS.FLOWERS, '/sprites/flower-pile.png');
+    this.load.image(ASSETS.FLOATING_EMBER, '/sprites/floating-ember-core.png');
 
-    // Load Specific Quest Object
-    const questItem = QUEST_DATA[1].room1Object;
-    this.load.image(questItem, `/sprites/${questItem}.png`);
+    // Load Specific Quest Objects explicitly for UI icons
+    // Ensure all 3 are loaded and keys match constants
+    this.load.image(QUEST_DATA[1].room1Object, `/sprites/${QUEST_DATA[1].room1Object}.png`);
+    this.load.image(QUEST_DATA[2].room1Object, `/sprites/${QUEST_DATA[2].room1Object}.png`);
+    this.load.image(QUEST_DATA[3].room1Object, `/sprites/${QUEST_DATA[3].room1Object}.png`);
     
     // Initialize Generator (for particles)
     this.generator = new AssetGenerator(this);
@@ -117,6 +122,23 @@ export default class Island1 extends Phaser.Scene {
     if (roomNum === 1) {
       this.currentBg = this.add.image(width / 2, height / 2, ASSETS.BG_ROOM_A).setDepth(0);
       
+      // Calculate collected items from state
+      this.collectedItems = 0;
+      this.progressUI.clearCollectedItems(); // Clear UI to prevent duplicates on resize
+      
+      if (questState.data.island1.completed) {
+          this.collectedItems++;
+          this.progressUI.addCollectedItem(QUEST_DATA[1].room1Object);
+      }
+      if (questState.data.island2.completed) {
+          this.collectedItems++;
+          this.progressUI.addCollectedItem(QUEST_DATA[2].room1Object);
+      }
+      if (questState.data.island3.completed) {
+          this.collectedItems++;
+          this.progressUI.addCollectedItem(QUEST_DATA[3].room1Object);
+      }
+
       // NPC
       this.currentNpc = this.add.sprite(width * 0.25, height * 0.75, ASSETS.NPC_GUIDEBOT)
         .setScale(assetScale * 0.8)
@@ -133,48 +155,35 @@ export default class Island1 extends Phaser.Scene {
           }
         }
 
-        // Check if there is already a bubble for the NPC (Step 1 -> Step 2)
-        if (this.currentBubble && this.currentBubble.visible && this.currentBubble.targetActor === this.currentNpc) {
-           this.currentBubble.destroy();
-           
-           // Player Response
-           if (!this.hasCollectedItem) {
-             this.currentBubble = new SpeechBubble(
-                this,
-                this.player!.x,
-                this.player!.y - 60,
-                "I'll look for it!",
-                this.player!.container
-             );
-           } else {
-             this.currentBubble = new SpeechBubble(
-                this,
-                this.player!.x,
-                this.player!.y - 60,
-                "I found it! Here.",
-                this.player!.container
-             );
-             
+        // Check completion status
+        if (this.collectedItems >= 3) {
              // Final NPC acknowledgement and Action
-             this.time.delayedCall(1500, () => {
-                if (this.currentBubble) this.currentBubble.destroy();
-                this.currentBubble = new SpeechBubble(
-                  this,
-                  this.currentNpc!.x,
-                  this.currentNpc!.y - 60,
-                  "Excellent! Proceed.",
-                  this.currentNpc!
-                );
-             });
-           }
-           return;
+             if (this.currentBubble && this.currentBubble.visible) {
+                 this.currentBubble.destroy();
+                 this.currentBubble = new SpeechBubble(
+                    this,
+                    this.currentNpc!.x,
+                    this.currentNpc!.y - 60,
+                    "Excellent! The portal is open.",
+                    this.currentNpc!
+                 );
+                 return;
+             }
         }
 
-        // Step 1: NPC speaks first
+        // Context-aware hints
         this.currentBubble?.destroy();
-        const message = !this.hasCollectedItem 
-          ? "Please find the crystal!\nIt's somewhere nearby."
-          : "Did you find the crystal?";
+        let message = "";
+        
+        if (this.collectedItems >= 3) {
+            message = "You found them all!";
+        } else if (!questState.data.island1.completed) {
+            message = "Find the Glowing Stone!\nIt's hidden in the bushes.";
+        } else if (!questState.data.island2.completed) {
+            message = "Catch the Ember Core!\nIt's floating around.";
+        } else if (!questState.data.island3.completed) {
+            message = "Find the Song Seed!\nCheck the flower piles.";
+        }
           
         this.currentBubble = new SpeechBubble(
           this, 
@@ -185,10 +194,8 @@ export default class Island1 extends Phaser.Scene {
         );
       });
 
-      // Item
-      if (!this.hasCollectedItem) {
-        this.createQuestItem(assetScale, width, height);
-      }
+      // Spawn Active Item
+      this.spawnRoom1Items(assetScale, width, height);
 
       // Exit (Portal)
       this.exitObject = this.add.sprite(width * 0.85, height * 0.6, ASSETS.PORTAL)
@@ -197,26 +204,17 @@ export default class Island1 extends Phaser.Scene {
         .setInteractive();
       
       this.exitObject.on('pointerdown', () => {
-        if (this.hasCollectedItem) {
-          // Auto walk to exit
-          this.tweens.add({
-            targets: this.player!.container,
-            x: width * 0.85,
-            y: height * 0.6,
-            duration: 1000,
-            onComplete: () => {
-              this.setupRoom(2);
-            }
-          });
+        if (this.collectedItems >= 3) {
+          this.setupRoom(2);
         } else {
-          this.dialogueManager.show("I need the object first!");
+          this.dialogueManager.show(`I need all 3 items!\nFound: ${this.collectedItems}/3`);
         }
       });
 
       // New Quest Announcement
-      if (!this.hasCollectedItem) {
+      if (this.collectedItems === 0) {
         this.time.delayedCall(500, () => {
-          this.dialogueManager.showAnnouncement("NEW QUEST: CRYSTAL ISLE\nFIND THE GLOWING STONE!");
+          this.dialogueManager.showAnnouncement("NEW QUEST: THE TRINITY\nFIND 3 SACRED ITEMS!");
         });
       }
 
@@ -240,13 +238,13 @@ export default class Island1 extends Phaser.Scene {
         if (this.currentBubble && this.currentBubble.visible && this.currentBubble.targetActor === this.currentNpc) {
              this.currentBubble.destroy();
              
-             if (this.hasCollectedItem) {
+             if (this.collectedItems >= 3) {
                // Player confirms
                this.currentBubble = new SpeechBubble(
                  this,
                  this.player!.x,
                  this.player!.y - 60,
-                 "I have the crystal!",
+                 "I have all 3 items!",
                  this.player!.container
                );
                
@@ -258,31 +256,28 @@ export default class Island1 extends Phaser.Scene {
                     this,
                     this.currentNpc!.x,
                     this.currentNpc!.y - 60,
-                    "Thank you! The door opens.",
+                    "The door opens!",
                     this.currentNpc!
                   );
-
-                  // Move to door logic
-                  this.time.delayedCall(1500, () => {
-                    if (this.currentBubble) this.currentBubble.destroy();
-                    this.tweens.add({
-                        targets: this.player!.container,
-                        x: width * 0.5,
-                        y: height * 0.6,
-                        duration: 1500,
-                        onComplete: () => {
+                  
+                  // Enable door interaction
+                  if (this.currentObject instanceof Phaser.GameObjects.Sprite) {
+                      this.currentObject.setTexture(ASSETS.DOOR_OPEN);
+                      // Make door bigger when unlocked
+                      this.currentObject.setScale(assetScale * 0.8);
+                      
+                      this.currentObject.on('pointerdown', () => {
                           this.dialogueManager.show(DIALOGUES.VILLAGER_UNLOCK);
                           this.time.delayedCall(1000, () => this.setupRoom(3));
-                        }
-                    });
-                  });
+                      });
+                  }
                });
              } else {
                this.currentBubble = new SpeechBubble(
                  this,
                  this.player!.x,
                  this.player!.y - 60,
-                 "I'll help you.",
+                 "I'm still looking.",
                  this.player!.container
                );
              }
@@ -291,12 +286,12 @@ export default class Island1 extends Phaser.Scene {
 
         // Step 1: NPC Speaks
         this.currentBubble?.destroy();
-        if (this.hasCollectedItem) {
+        if (this.collectedItems >= 3) {
           this.currentBubble = new SpeechBubble(
             this,
             this.currentNpc!.x,
             this.currentNpc!.y - 60,
-            "Do you have the crystal?",
+            "Do you have the items?",
             this.currentNpc!
           );
         } else {
@@ -304,7 +299,7 @@ export default class Island1 extends Phaser.Scene {
             this,
             this.currentNpc!.x,
             this.currentNpc!.y - 60,
-            "I'm so sad...\nI need to unlock this door.",
+            "I need 3 sacred items\nto unlock this door.",
             this.currentNpc!
           );
         }
@@ -353,24 +348,10 @@ export default class Island1 extends Phaser.Scene {
                  this,
                  this.currentNpc!.x,
                  this.currentNpc!.y - 60,
-                 "You may enter.",
+                 "You may enter the portal.",
                  this.currentNpc!
                );
                this.canExit = true;
-
-               // Auto walk to exit after dialogue
-               this.time.delayedCall(1500, () => {
-                 if (this.currentBubble) this.currentBubble.destroy();
-                 this.tweens.add({
-                   targets: this.player!.container,
-                   x: width * 0.5,
-                   y: height * 0.5,
-                   duration: 1500,
-                   onComplete: () => {
-                     this.completeQuest();
-                   }
-                 });
-               });
             });
             return;
         }
@@ -388,7 +369,7 @@ export default class Island1 extends Phaser.Scene {
 
       // Open Door
       this.currentObject = this.add.sprite(width * 0.5, height * 0.5, ASSETS.DOOR_OPEN)
-        .setScale(assetScale * 0.5)
+        .setScale(assetScale * 0.8) // Bigger door
         .setDepth(15)
         .setInteractive();
         
@@ -416,48 +397,187 @@ export default class Island1 extends Phaser.Scene {
     }
   }
 
-  private createQuestItem(scale: number, width: number, height: number) {
-    const itemKey = QUEST_DATA[1].room1Object;
-    const item = new VisualCollectible(
-      this, 
-      width * 0.8, height * 0.6,
-      itemKey, 
-      'quest_item', 
-      'item_1', 
-      QUEST_DATA[1].color
-    );
-    item.mainSprite.setScale(scale * 0.4); 
-    item.setDepth(40);
-    this.currentObject = item;
+  // Track if we've spawned objects to prevent duplicates
+  private activeQuestObjects: Record<string, boolean> = {};
+
+  private spawnRoom1Items(scale: number, width: number, height: number) {
+    // Sequential Quest Logic
+    
+    // 1. Crystal (Hidden in Bush)
+    if (!questState.data.island1.completed) {
+        if (this.activeQuestObjects['q1']) return; // Already spawned
+        this.activeQuestObjects['q1'] = true;
+
+        const item1 = new VisualCollectible(this, width * 0.8, height * 0.6, QUEST_DATA[1].room1Object, 'quest', '1', QUEST_DATA[1].color);
+        item1.mainSprite.setScale(scale * 0.4);
+        item1.setDepth(40);
+        item1.disableInteractive();
+        item1.setVisible(false);
+
+        const bush = this.add.sprite(width * 0.8, height * 0.6, ASSETS.BUSHES)
+            .setScale(scale * 0.5)
+            .setDepth(45)
+            .setInteractive();
+        
+        bush.on('pointerdown', () => {
+            this.tweens.add({
+                targets: bush,
+                alpha: 0,
+                scale: 1.2,
+                duration: 500,
+                onComplete: () => {
+                    bush.destroy();
+                    if (item1 && item1.scene) {
+                        item1.setVisible(true);
+                        this.time.delayedCall(200, () => {
+                            if (item1 && item1.scene) {
+                                item1.collect(() => {
+                                    this.collectedItems++;
+                                    questState.completeIsland(1);
+                                    this.dialogueManager.show(`Found Stone!`);
+                                    this.progressUI.showBadgeEarned(1);
+                                    this.progressUI.addCollectedItem(QUEST_DATA[1].room1Object);
+                                    // Trigger next spawn
+                                    this.spawnRoom1Items(scale, width, height);
+                                });
+                            }
+                        });
+                    }
+                }
+            });
+        });
+        return; // Stop processing subsequent quests
+    }
+
+    // 2. Ember Core (Moving)
+    if (!questState.data.island2.completed) {
+        if (this.activeQuestObjects['q2']) return;
+        this.activeQuestObjects['q2'] = true;
+
+        const item2 = new VisualCollectible(this, width * 0.5, height * 0.4, ASSETS.FLOATING_EMBER, 'quest', '2', QUEST_DATA[2].color);
+        // Increased scale for better visibility - User requested 25% of previous size (which was 1.0)
+        // Wait, user said "make it 25% the size now". Previous was 1.0. So 0.25.
+        item2.mainSprite.setScale(scale * 0.25); 
+        item2.setDepth(40);
+        
+        // Movement
+        this.tweens.add({
+            targets: item2,
+            x: width * 0.6,
+            y: height * 0.3,
+            duration: 3000,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+            onUpdate: () => {
+                // Hover Collection Logic
+                if (this.player && item2.visible && !item2.collected) {
+                    const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, item2.x, item2.y);
+                    if (dist < 80) { // Hover radius
+                        // Just call collect without arguments, the override handles the logic
+                        item2.collect();
+                    }
+                }
+            }
+        });
+        
+        // Stop default floating to prevent conflict
+        item2.stopFloating();
+
+        // Override collect to update state (for click)
+        const originalCollect = item2.collect.bind(item2);
+        item2.collect = (cb) => {
+            originalCollect(() => {
+                this.collectedItems++;
+                questState.completeIsland(2);
+                this.dialogueManager.show(`Caught Ember!`);
+                this.progressUI.showBadgeEarned(2);
+                this.progressUI.addCollectedItem(QUEST_DATA[2].room1Object); // Use clean icon
+                if (cb) cb();
+                // Trigger next spawn
+                this.spawnRoom1Items(scale, width, height);
+            });
+        };
+        return; // Stop processing
+    }
+
+    // 3. Song Seed (Flower Piles)
+    if (!questState.data.island3.completed) {
+        if (this.activeQuestObjects['q3']) return;
+        this.activeQuestObjects['q3'] = true;
+
+        const positions = [
+            { x: width * 0.2, y: height * 0.6 },
+            { x: width * 0.4, y: height * 0.8 },
+            { x: width * 0.6, y: height * 0.6 }
+        ];
+        const winningIndex = Phaser.Math.Between(0, 2);
+        const piles: Phaser.GameObjects.Sprite[] = [];
+        
+        positions.forEach((pos, index) => {
+            const pile = this.add.sprite(pos.x, pos.y, ASSETS.FLOWERS);
+            pile.setScale(scale * 0.3); // Reduced scale for flower piles
+            pile.setDepth(45);
+            pile.setInteractive({ useHandCursor: true });
+            piles.push(pile);
+            
+            pile.on('pointerdown', () => {
+                if (index === winningIndex) {
+                    // Destroy ALL piles
+                    piles.forEach(p => {
+                        this.tweens.add({
+                            targets: p,
+                            alpha: 0,
+                            duration: 500,
+                            onComplete: () => p.destroy()
+                        });
+                    });
+
+                    // Spawn Item
+                    const item3 = new VisualCollectible(this, pos.x, pos.y, QUEST_DATA[3].room1Object, 'quest', '3', QUEST_DATA[3].color);
+                    item3.mainSprite.setScale(scale * 0.4);
+                    item3.setDepth(40);
+                    
+                    // Collect immediately
+                    this.time.delayedCall(200, () => {
+                        item3.collect(() => {
+                            this.collectedItems++;
+                            questState.completeIsland(3);
+                            this.dialogueManager.show(`Found Seed!`);
+                            this.progressUI.showBadgeEarned(3);
+                            this.progressUI.addCollectedItem(QUEST_DATA[3].room1Object);
+                            // Trigger next spawn (or final check)
+                            this.spawnRoom1Items(scale, width, height);
+                        });
+                    });
+                } else {
+                    this.dialogueManager.show("Nothing here...");
+                    this.tweens.add({
+                        targets: pile,
+                        scale: 0.8,
+                        yoyo: true,
+                        duration: 100
+                    });
+                }
+            });
+        });
+        return;
+    }
   }
 
   update(time: number, delta: number) {
     if (!this.player) return;
     this.handleMovement(delta);
     
-    if (this.currentRoom === 1 && !this.hasCollectedItem && this.currentObject instanceof VisualCollectible) {
-      if (this.currentObject.isPlayerNear(this.player.x, this.player.y)) {
-        this.currentObject.collect(() => {
-          this.hasCollectedItem = true;
-          this.dialogueManager.show(DIALOGUES.ITEM_COLLECTED);
-          this.progressUI.showBadgeEarned(1);
-          
-          this.time.delayedCall(2000, () => {
-             this.dialogueManager.showAnnouncement("PROCEEDING TO NEXT ROOM...");
-             this.time.delayedCall(1000, () => this.setupRoom(2));
-          });
-        });
-      }
-    }
+    // Update logic handled in callbacks
   }
 
   private completeQuest() {
     this.dialogueManager.showAnnouncement("QUEST COMPLETE!");
     questState.completeIsland(1);
-    gameState.currentIsland = 2;
     
     this.time.delayedCall(3000, () => {
-      this.scene.start('Island2');
+      this.scene.start('StarSanctum');
     });
   }
 
@@ -524,7 +644,7 @@ export default class Island1 extends Phaser.Scene {
         }
       }
 
-      if (this.currentObject instanceof VisualCollectible && !this.hasCollectedItem) {
+      if (this.currentObject instanceof VisualCollectible && this.collectedItems < 3) {
         const objDist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.currentObject.x, this.currentObject.y);
         const minObjDist = 60;
         if (objDist < minObjDist) {

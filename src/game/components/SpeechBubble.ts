@@ -49,6 +49,9 @@ export class SpeechBubble extends Phaser.GameObjects.Container {
       ease: 'Back.out'
     });
 
+    // Auto-fade after a few seconds
+    this.fadeOut(500, 4000);
+
     // Optional: Follow target
     if (targetActor) {
       // Logic to follow would go in update, but for now fixed position is okay or handled by scene
@@ -98,7 +101,11 @@ export class SpeechBubble extends Phaser.GameObjects.Container {
   }
 
   public fadeOut(duration: number = 500, delay: number = 2000): void {
+    if (!this.scene) return;
+
     this.scene.time.delayedCall(delay, () => {
+      if (!this.scene || !this.scene.tweens) return; // Safety check
+      
       this.scene.tweens.add({
         targets: this,
         alpha: 0,
