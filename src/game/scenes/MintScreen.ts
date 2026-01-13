@@ -11,6 +11,10 @@ export default class MintScreen extends Phaser.Scene {
     super('MintScreen');
   }
 
+  preload() {
+    this.load.image('reformed-star', '/sprites/star-fragment.png');
+  }
+
   create() {
     console.log('🎨 Mint Screen - Preparing NFT...');
     
@@ -23,12 +27,13 @@ export default class MintScreen extends Phaser.Scene {
     this.add.rectangle(cx, cy, width, height, 0x0a0a1a, 1).setDepth(0);
 
     // Title
-    this.add.text(cx, height * 0.1, '🌌 COSMIC ISLES ACHIEVEMENT 🌌', {
+    this.add.text(cx, height * 0.08, 'COSMIC ISLES ACHIEVEMENT', {
       fontSize: '32px',
       color: '#FFD700',
       fontFamily: 'Arial, sans-serif',
       stroke: '#000000',
-      strokeThickness: 4
+      strokeThickness: 4,
+      fontStyle: 'bold'
     }).setOrigin(0.5).setDepth(10);
 
     // NFT Preview Card
@@ -59,86 +64,102 @@ export default class MintScreen extends Phaser.Scene {
 
   private createNFTPreview(cx: number, cy: number): void {
     // Card background
+    const cardWidth = 400;
+    const cardHeight = 450; // Taller to fit content
     const card = this.add.graphics();
     card.fillStyle(0x1a1a2e, 1);
-    card.fillRoundedRect(cx - 200, cy - 200, 400, 400, 15);
+    card.fillRoundedRect(cx - cardWidth/2, cy - cardHeight/2, cardWidth, cardHeight, 15);
     card.lineStyle(3, 0xFFD700, 1);
-    card.strokeRoundedRect(cx - 200, cy - 200, 400, 400, 15);
+    card.strokeRoundedRect(cx - cardWidth/2, cy - cardHeight/2, cardWidth, cardHeight, 15);
     card.setDepth(5);
 
-    // NFT Image placeholder (reformed star)
-    const starGraphic = this.add.graphics();
-    starGraphic.fillStyle(0xFFD700, 1);
-    starGraphic.fillCircle(cx, cy - 80, 60);
-    starGraphic.lineStyle(2, 0xffffff, 1);
-    starGraphic.strokeCircle(cx, cy - 80, 60);
-    starGraphic.setDepth(6);
+    // NFT Image (Reformed Star)
+    // Position it in the upper half of the card
+    const imageY = cy - 80;
+    const starSprite = this.add.sprite(cx, imageY, 'reformed-star');
+    starSprite.setScale(0.8); // Adjust scale to fit nicely
+    starSprite.setDepth(6);
 
     // Glow animation
     this.tweens.add({
-      targets: starGraphic,
-      alpha: 0.7,
-      duration: 1000,
+      targets: starSprite,
+      scaleX: 0.85,
+      scaleY: 0.85,
+      alpha: 0.9,
+      duration: 1500,
       yoyo: true,
-      repeat: -1
+      repeat: -1,
+      ease: 'Sine.easeInOut'
     });
 
-    // NFT Metadata
+    // Metadata Text
     const badges = questState.getEarnedBadges();
     const playTime = getTotalPlayTime();
     const speed = gameState.completionSpeed || 'normal';
 
-    const metadata = [
-      'STAR REFORGED',
-      '',
-      `Islands Completed: 3/3`,
-      `Badges: ${badges.join(', ')}`,
-      `Completion Time: ${playTime} min`,
-      `Speed: ${speed}`,
-      '',
-      `Player: ${playerState.playerName || 'Star Walker'}`
-    ];
+    // Title inside card
+    this.add.text(cx, imageY + 80, 'STAR REFORGED', {
+      fontSize: '24px',
+      color: '#FFD700',
+      fontFamily: 'Arial, sans-serif',
+      fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(6);
 
-    this.add.text(cx, cy + 40, metadata.join('\n'), {
-      fontSize: '16px',
-      color: '#ffffff',
+    // Stats block
+    const statsText = [
+      `Islands Completed: 3/3`,
+      `Badges: ${badges.length}/5`,
+      `Time: ${playTime} min (${speed})`,
+      `Player: ${playerState.playerName || 'Star Walker'}`
+    ].join('\n');
+
+    this.add.text(cx, imageY + 140, statsText, {
+      fontSize: '18px',
+      color: '#cccccc',
       fontFamily: 'Arial, sans-serif',
       align: 'center',
-      lineSpacing: 5
-    }).setOrigin(0.5).setDepth(6);
+      lineSpacing: 10
+    }).setOrigin(0.5, 0).setDepth(6);
   }
 
   private createMintButton(cx: number, y: number): void {
-    const button = this.add.graphics();
-    button.fillStyle(0xFFD700, 1);
-    button.fillRoundedRect(cx - 150, y - 30, 300, 60, 10);
-    button.setDepth(10);
-    button.setInteractive(
-      new Phaser.Geom.Rectangle(cx - 150, y - 30, 300, 60),
-      Phaser.Geom.Rectangle.Contains
-    );
-
-    const buttonText = this.add.text(cx, y, '🎨 MINT NFT', {
+    // Styled Button (Container)
+    const container = this.add.container(cx, y);
+    const width = 280;
+    const height = 60;
+    
+    const bg = this.add.graphics();
+    bg.fillStyle(0xFFD700, 1); // Gold background
+    bg.fillRoundedRect(-width/2, -height/2, width, height, 15);
+    bg.lineStyle(3, 0xffffff, 1);
+    bg.strokeRoundedRect(-width/2, -height/2, width, height, 15);
+    
+    const label = this.add.text(0, 0, 'MINT NFT', {
       fontSize: '28px',
       color: '#000000',
       fontFamily: 'Arial, sans-serif',
       fontStyle: 'bold'
-    }).setOrigin(0.5).setDepth(11);
-
-    // Hover effect
-    button.on('pointerover', () => {
-      button.clear();
-      button.fillStyle(0xFFFFFF, 1);
-      button.fillRoundedRect(cx - 150, y - 30, 300, 60, 10);
+    }).setOrigin(0.5);
+    
+    container.add([bg, label]);
+    container.setDepth(10);
+    
+    // Interactive
+    container.setSize(width, height);
+    container.setInteractive(new Phaser.Geom.Rectangle(-width/2, -height/2, width, height), Phaser.Geom.Rectangle.Contains);
+    
+    // Pulse animation
+    this.tweens.add({
+      targets: container,
+      scaleX: 1.05,
+      scaleY: 1.05,
+      duration: 800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
     });
 
-    button.on('pointerout', () => {
-      button.clear();
-      button.fillStyle(0xFFD700, 1);
-      button.fillRoundedRect(cx - 150, y - 30, 300, 60, 10);
-    });
-
-    button.on('pointerdown', () => {
+    container.on('pointerdown', () => {
       this.mintNFT();
     });
   }
