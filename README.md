@@ -18,7 +18,10 @@ npm run build
 npm start
 ```
 
-Visit `http://localhost:3000` to play.
+Visit `https://farcaster.xyz/miniapps/Hys_Qc3Q5KF_/cosmic-isles` to play.
+
+## 🔗 Play on Farcaster
+**[Play Cosmic Isles](https://farcaster.xyz/miniapps/Hys_Qc3Q5KF_/cosmic-isles)**
 
 ## 📁 Project Structure
 
