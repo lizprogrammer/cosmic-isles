@@ -27,8 +27,9 @@ export default class MintScreen extends Phaser.Scene {
     this.add.rectangle(cx, cy, width, height, 0x0a0a1a, 1).setDepth(0);
 
     // Title
-    this.add.text(cx, height * 0.08, 'COSMIC ISLES ACHIEVEMENT', {
-      fontSize: '32px',
+    const titleFontSize = Math.min(32, width * 0.08);
+    this.add.text(cx, height * 0.1, 'COSMIC ACHIEVEMENT', {
+      fontSize: `${titleFontSize}px`,
       color: '#FFD700',
       fontFamily: 'Arial, sans-serif',
       stroke: '#000000',
@@ -40,7 +41,20 @@ export default class MintScreen extends Phaser.Scene {
     this.createNFTPreview(cx, cy);
 
     // Mint button
-    this.createMintButton(cx, height * 0.85);
+    const mintButton = this.createStyledButton(cx, height * 0.85, 'MINT NFT', 0xFFD700, () => {
+      this.mintNFT();
+    });
+
+    // Pulse animation for Mint button
+    this.tweens.add({
+      targets: mintButton,
+      scaleX: 1.05,
+      scaleY: 1.05,
+      yoyo: true,
+      repeat: -1,
+      duration: 800,
+      ease: 'Sine.easeInOut'
+    });
 
     // Back button
     const backButton = this.add.text(50, height - 50, '← Back to Sanctum', {
@@ -62,10 +76,40 @@ export default class MintScreen extends Phaser.Scene {
     });
   }
 
+  private createStyledButton(x: number, y: number, text: string, color: number, callback: () => void): Phaser.GameObjects.Container {
+    const container = this.add.container(x, y);
+    
+    const width = 280;
+    const height = 60;
+    
+    const bg = this.add.graphics();
+    bg.fillStyle(color, 1);
+    bg.fillRoundedRect(-width/2, -height/2, width, height, 15);
+    bg.lineStyle(3, 0xffffff, 1);
+    bg.strokeRoundedRect(-width/2, -height/2, width, height, 15);
+    
+    const label = this.add.text(0, 0, text, {
+      fontSize: '28px',
+      color: '#000000',
+      fontFamily: 'Arial, sans-serif',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    
+    container.add([bg, label]);
+    
+    // Interactive
+    container.setSize(width, height);
+    container.setInteractive(new Phaser.Geom.Rectangle(-width/2, -height/2, width, height), Phaser.Geom.Rectangle.Contains);
+    
+    container.on('pointerdown', callback);
+    
+    return container;
+  }
+
   private createNFTPreview(cx: number, cy: number): void {
     // Card background
     const cardWidth = 400;
-    const cardHeight = 450; // Taller to fit content
+    const cardHeight = 450;
     const card = this.add.graphics();
     card.fillStyle(0x1a1a2e, 1);
     card.fillRoundedRect(cx - cardWidth/2, cy - cardHeight/2, cardWidth, cardHeight, 15);
@@ -77,15 +121,15 @@ export default class MintScreen extends Phaser.Scene {
     // Position it in the upper half of the card
     const imageY = cy - 80;
     const starSprite = this.add.sprite(cx, imageY, 'reformed-star');
-    starSprite.setScale(0.8); // Adjust scale to fit nicely
+    starSprite.setScale(0.8);
     starSprite.setDepth(6);
 
     // Glow animation
     this.tweens.add({
       targets: starSprite,
+      alpha: 0.9,
       scaleX: 0.85,
       scaleY: 0.85,
-      alpha: 0.9,
       duration: 1500,
       yoyo: true,
       repeat: -1,
@@ -105,64 +149,28 @@ export default class MintScreen extends Phaser.Scene {
       fontStyle: 'bold'
     }).setOrigin(0.5).setDepth(6);
 
-    // Stats block
-    const statsText = [
-      `Islands Completed: 3/3`,
-      `Badges: ${badges.length}/5`,
-      `Time: ${playTime} min (${speed})`,
-      `Player: ${playerState.playerName || 'Star Walker'}`
-    ].join('\n');
-
-    this.add.text(cx, imageY + 140, statsText, {
+    // Stats block with word wrap for badges
+    const textStyle = {
       fontSize: '18px',
       color: '#cccccc',
       fontFamily: 'Arial, sans-serif',
       align: 'center',
+      wordWrap: { width: 360 },
       lineSpacing: 10
-    }).setOrigin(0.5, 0).setDepth(6);
+    };
+
+    const statsText = [
+      `Islands Completed: 3/3`,
+      `Badges: ${badges.length}/3`, // Was showing length/5 but user removed quests 4/5
+      `Time: ${playTime} min`,
+      `Player: ${playerState.playerName || 'Star Walker'}`
+    ].join('\n');
+
+    this.add.text(cx, imageY + 140, statsText, textStyle).setOrigin(0.5, 0).setDepth(6);
   }
 
-  private createMintButton(cx: number, y: number): void {
-    // Styled Button (Container)
-    const container = this.add.container(cx, y);
-    const width = 280;
-    const height = 60;
-    
-    const bg = this.add.graphics();
-    bg.fillStyle(0xFFD700, 1); // Gold background
-    bg.fillRoundedRect(-width/2, -height/2, width, height, 15);
-    bg.lineStyle(3, 0xffffff, 1);
-    bg.strokeRoundedRect(-width/2, -height/2, width, height, 15);
-    
-    const label = this.add.text(0, 0, 'MINT NFT', {
-      fontSize: '28px',
-      color: '#000000',
-      fontFamily: 'Arial, sans-serif',
-      fontStyle: 'bold'
-    }).setOrigin(0.5);
-    
-    container.add([bg, label]);
-    container.setDepth(10);
-    
-    // Interactive
-    container.setSize(width, height);
-    container.setInteractive(new Phaser.Geom.Rectangle(-width/2, -height/2, width, height), Phaser.Geom.Rectangle.Contains);
-    
-    // Pulse animation
-    this.tweens.add({
-      targets: container,
-      scaleX: 1.05,
-      scaleY: 1.05,
-      duration: 800,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut'
-    });
-
-    container.on('pointerdown', () => {
-      this.mintNFT();
-    });
-  }
+  // Helper method removed as it was replaced by createStyledButton usage directly in create
+  private dummy() {} // Placeholder to ensure replacement block is clean
 
   private async mintNFT(): Promise<void> {
     console.log('🎨 Initiating NFT mint...');
