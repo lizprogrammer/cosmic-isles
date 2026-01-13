@@ -17,6 +17,7 @@ export default class AvatarCreator extends Phaser.Scene {
   }
 
   preload() {
+    this.load.image("splash", "/splash.png");
     this.load.image("base-blue", "/sprites/avatar/base-blue.png");
     this.load.image("base-green", "/sprites/avatar/base-green.png");
     this.load.image("outfit-1", "/sprites/avatar/outfit-1.png");
@@ -34,26 +35,35 @@ export default class AvatarCreator extends Phaser.Scene {
     const height = this.scale.height;
 
     // Background
-    this.add.rectangle(cx, cy, width, height, 0x1a1a2e);
+    this.add.image(cx, cy, 'splash')
+      .setDisplaySize(width, height)
+      .setAlpha(0.4);
+    
+    // Dark overlay for readability
+    this.add.rectangle(cx, cy, width, height, 0x000000, 0.6);
 
     // Title
-    this.add.text(cx, height * 0.1, "👤 Create Your Star Walker", {
-      fontSize: "36px",
+    this.add.text(cx, height * 0.08, "👤 Create Your Star Walker", {
+      fontSize: "42px",
       color: "#FFD700",
       fontFamily: "Arial, sans-serif",
-      fontStyle: "bold"
+      fontStyle: "bold",
+      stroke: "#000000",
+      strokeThickness: 4
     }).setOrigin(0.5);
 
-    this.add.text(cx, height * 0.18, "This character will accompany you through all 5 islands", {
-      fontSize: "18px",
-      color: "#ffffff",
+    this.add.text(cx, height * 0.15, "This character will accompany you through all 5 islands", {
+      fontSize: "20px",
+      color: "#cccccc",
       fontFamily: "Arial, sans-serif",
       align: 'center',
-      wordWrap: { width: width * 0.8 }
+      wordWrap: { width: width * 0.8 },
+      stroke: "#000000",
+      strokeThickness: 2
     }).setOrigin(0.5);
 
     // Create preview container
-    this.previewSprite = this.add.container(cx, height * 0.45);
+    this.previewSprite = this.add.container(cx, height * 0.4);
     
     // Build initial preview
     this.updatePreview();
@@ -64,26 +74,7 @@ export default class AvatarCreator extends Phaser.Scene {
     this.createAccessoryOptions();
 
     // Start button
-    const startButton = this.add.text(cx, height * 0.85, "🚀 Begin Adventure", {
-      fontSize: "28px",
-      color: "#000000",
-      fontFamily: "Arial, sans-serif",
-      fontStyle: "bold",
-      backgroundColor: "#FFD700",
-      padding: { x: 30, y: 15 }
-    }).setOrigin(0.5).setInteractive();
-
-    startButton.on("pointerover", () => {
-      startButton.setScale(1.1);
-      startButton.setStyle({ backgroundColor: "#FFF" });
-    });
-
-    startButton.on("pointerout", () => {
-      startButton.setScale(1);
-      startButton.setStyle({ backgroundColor: "#FFD700" });
-    });
-
-    startButton.on("pointerdown", () => {
+    const startButton = this.createStyledButton(cx, height * 0.9, "Begin Adventure", 0xFFD700, () => {
       // Save to player state
       playerState.bodyColor = this.selectedBody;
       playerState.outfit = this.selectedOutfit;
@@ -93,6 +84,47 @@ export default class AvatarCreator extends Phaser.Scene {
       
       this.scene.start("Island1");
     });
+    
+    // Add glow/pulse to button
+    this.tweens.add({
+        targets: startButton,
+        scaleX: 1.05,
+        scaleY: 1.05,
+        duration: 800,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+    });
+  }
+
+  private createStyledButton(x: number, y: number, text: string, color: number, callback: () => void): Phaser.GameObjects.Container {
+    const container = this.add.container(x, y);
+    
+    const width = 280;
+    const height = 60;
+    
+    const bg = this.add.graphics();
+    bg.fillStyle(color, 1);
+    bg.fillRoundedRect(-width/2, -height/2, width, height, 15);
+    bg.lineStyle(3, 0xffffff, 1);
+    bg.strokeRoundedRect(-width/2, -height/2, width, height, 15);
+    
+    const label = this.add.text(0, 0, text, {
+      fontSize: '28px',
+      color: '#000000',
+      fontFamily: 'Arial, sans-serif',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    
+    container.add([bg, label]);
+    
+    // Interactive
+    container.setSize(width, height);
+    container.setInteractive(new Phaser.Geom.Rectangle(-width/2, -height/2, width, height), Phaser.Geom.Rectangle.Contains);
+    
+    container.on('pointerdown', callback);
+    
+    return container;
   }
 
   private updatePreview(): void {
@@ -103,21 +135,21 @@ export default class AvatarCreator extends Phaser.Scene {
 
     // Add body (base layer)
     const body = this.add.sprite(0, 0, this.selectedBody);
-    body.setScale(2);
+    body.setScale(0.8); // Reduced from 2 to 0.8
     this.previewSprite?.add(body);
 
     // Add outfit (middle layer)
     const outfit = this.add.sprite(0, 0, this.selectedOutfit);
-    outfit.setScale(2);
+    outfit.setScale(0.8); // Reduced from 2 to 0.8
     this.previewSprite?.add(outfit);
 
     // Add accessory (top layer)
     const accessory = this.add.sprite(0, 0, this.selectedAccessory);
-    accessory.setScale(2);
+    accessory.setScale(0.8); // Reduced from 2 to 0.8
     this.previewSprite?.add(accessory);
 
     // Glow effect (behind)
-    const glow = this.add.circle(0, 0, 80, 0x9D4EDD, 0.2);
+    const glow = this.add.circle(0, 0, 60, 0x9D4EDD, 0.2); // Reduced radius
     this.previewSprite?.addAt(glow, 0); 
 
     // Pulse animation

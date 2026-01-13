@@ -34,27 +34,29 @@ export default class MainMenu extends Phaser.Scene {
     this.add.rectangle(cx, cy, this.scale.width, this.scale.height, 0x000000, 0.5);
 
     // Title
-    const title = this.add.text(cx, cy - 150, '🌌 COSMIC ISLES 🌌', {
-      fontSize: '64px',
+    const titleFontSize = Math.max(32, Math.min(64, this.scale.width * 0.12)); // Dynamic font size
+    const title = this.add.text(cx, cy - 150, 'COSMIC ISLES', {
+      fontSize: `${titleFontSize}px`,
       color: '#FFD700',
       fontFamily: 'Arial, sans-serif',
       stroke: '#000000',
-      strokeThickness: 8
+      strokeThickness: 6,
+      shadow: { offsetX: 2, offsetY: 2, color: '#000000', blur: 5, stroke: true, fill: true }
     }).setOrigin(0.5);
 
-    const subtitle = this.add.text(cx, cy - 80, 'Journey Through Five Islands to Reforge the Shattered Star', {
-      fontSize: '24px',
-      color: '#ffffff',
+    const subtitle = this.add.text(cx, cy - 80, 'Journey Through the Islands to Reforge the Shattered Star', {
+      fontSize: '20px',
+      color: '#E0E0E0',
       fontFamily: 'Arial, sans-serif',
       align: 'center',
-      wordWrap: { width: this.scale.width * 0.7 }
+      wordWrap: { width: this.scale.width * 0.8 }
     }).setOrigin(0.5);
 
     // Check for saved progress
     const hasSave = storage.hasSave();
 
     // New Game button
-    const newGameButton = this.createButton(cx, cy + 50, '✨ New Game', () => {
+    const newGameButton = this.createStyledButton(cx, cy + 50, 'New Game', 0xFFD700, () => {
       if (hasSave) {
         this.showConfirmReset();
       } else {
@@ -75,12 +77,9 @@ export default class MainMenu extends Phaser.Scene {
 
     // Continue button (if save exists)
     if (hasSave) {
-      const continueButton = this.createButton(cx, cy + 140, '▶️  Continue', () => {
+      const continueButton = this.createStyledButton(cx, cy + 140, 'Continue', 0x00FF00, () => {
         this.continueGame();
       });
-      
-      // Highlight continue button
-      continueButton.setStyle({ color: '#00FF00' });
     }
 
     // Credits
@@ -91,28 +90,39 @@ export default class MainMenu extends Phaser.Scene {
     }).setOrigin(0.5);
   }
 
-  private createButton(x: number, y: number, text: string, callback: () => void): Phaser.GameObjects.Text {
-    const button = this.add.text(x, y, text, {
-      fontSize: '32px',
-      color: '#FFD700',
+  private createStyledButton(x: number, y: number, text: string, color: number, callback: () => void): Phaser.GameObjects.Container {
+    const container = this.add.container(x, y);
+    
+    const width = 280;
+    const height = 60;
+    
+    const bg = this.add.graphics();
+    bg.fillStyle(color, 1);
+    bg.fillRoundedRect(-width/2, -height/2, width, height, 15);
+    bg.lineStyle(3, 0xffffff, 1);
+    bg.strokeRoundedRect(-width/2, -height/2, width, height, 15);
+    
+    const label = this.add.text(0, 0, text, {
+      fontSize: '28px',
+      color: '#000000',
       fontFamily: 'Arial, sans-serif',
-      backgroundColor: '#000000',
-      padding: { x: 40, y: 20 }
-    }).setOrigin(0.5).setInteractive();
-
-    button.on('pointerover', () => {
-      button.setScale(1.1);
-      button.setStyle({ color: '#FFFFFF' });
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    
+    container.add([bg, label]);
+    
+    // Interactive
+    container.setSize(width, height);
+    container.setInteractive(new Phaser.Geom.Rectangle(-width/2, -height/2, width, height), Phaser.Geom.Rectangle.Contains);
+    
+    container.on('pointerover', () => {
+        // Only scale if not already pulsing (for new game button handled externally, but self-scaling is fine)
+        // For simplicity, we won't override the external tween if it exists, but this acts as immediate feedback
     });
-
-    button.on('pointerout', () => {
-      button.setScale(1);
-      button.setStyle({ color: '#FFD700' });
-    });
-
-    button.on('pointerdown', callback);
-
-    return button;
+    
+    container.on('pointerdown', callback);
+    
+    return container;
   }
 
   private startNewGame(): void {

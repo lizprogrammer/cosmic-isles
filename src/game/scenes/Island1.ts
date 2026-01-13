@@ -159,16 +159,19 @@ export default class Island1 extends Phaser.Scene {
         if (this.collectedItems >= 3) {
              // Final NPC acknowledgement and Action
              if (this.currentBubble && this.currentBubble.visible) {
-                 this.currentBubble.destroy();
-                 this.currentBubble = new SpeechBubble(
-                    this,
-                    this.currentNpc!.x,
-                    this.currentNpc!.y - 60,
-                    "Excellent! The portal is open.",
-                    this.currentNpc!
-                 );
-                 return;
+                 // Do not destroy/recreate if already showing final message
+                 if (this.currentBubble.text === "Excellent! The portal is open.") return;
              }
+             
+             this.currentBubble?.destroy();
+             this.currentBubble = new SpeechBubble(
+                this,
+                this.currentNpc!.x,
+                this.currentNpc!.y - 60,
+                "Excellent! The portal is open.",
+                this.currentNpc!
+             );
+             return;
         }
 
         // Context-aware hints
@@ -225,6 +228,12 @@ export default class Island1 extends Phaser.Scene {
         .setScale(assetScale * 0.8)
         .setDepth(20);
       
+      // Track if unlocked for dialogue
+      let isUnlocked = false;
+      if (this.currentObject instanceof Phaser.GameObjects.Sprite) {
+          isUnlocked = this.currentObject.texture.key === ASSETS.DOOR_OPEN;
+      }
+
       const handleUnlock = () => {
         if (this.player) {
           const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.currentNpc!.x, this.currentNpc!.y);
@@ -232,6 +241,19 @@ export default class Island1 extends Phaser.Scene {
             this.dialogueManager.show("I need to get closer.");
             return;
           }
+        }
+
+        // If already unlocked, give simple message
+        if (this.currentObject instanceof Phaser.GameObjects.Sprite && this.currentObject.texture.key === ASSETS.DOOR_OPEN) {
+             this.currentBubble?.destroy();
+             this.currentBubble = new SpeechBubble(
+                this,
+                this.currentNpc!.x,
+                this.currentNpc!.y - 60,
+                "Thank you! Go quickly!",
+                this.currentNpc!
+             );
+             return;
         }
 
         // Step 2: Player Responds
@@ -330,6 +352,19 @@ export default class Island1 extends Phaser.Scene {
           }
         }
         
+        // If can exit, don't repeat logic
+        if (this.canExit) {
+             this.currentBubble?.destroy();
+             this.currentBubble = new SpeechBubble(
+                this,
+                this.currentNpc!.x,
+                this.currentNpc!.y - 60,
+                "The stars await you.",
+                this.currentNpc!
+             );
+             return;
+        }
+
         // Step 2: Player Responds
         if (this.currentBubble && this.currentBubble.visible && this.currentBubble.targetActor === this.currentNpc) {
             this.currentBubble.destroy();

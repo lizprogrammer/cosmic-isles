@@ -4,6 +4,11 @@ export class SpeechBubble extends Phaser.GameObjects.Container {
   private bubbleGraphics: Phaser.GameObjects.Graphics;
   private textObject: Phaser.GameObjects.Text;
   public targetActor?: Phaser.GameObjects.GameObject; // Public to check ownership
+  
+  // Public accessor for text
+  public get text(): string {
+    return this.textObject.text;
+  }
 
   constructor(scene: Phaser.Scene, x: number, y: number, text: string, targetActor?: Phaser.GameObjects.GameObject) {
     super(scene, x, y);
