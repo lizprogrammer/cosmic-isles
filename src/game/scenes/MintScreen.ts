@@ -41,9 +41,11 @@ export default class MintScreen extends Phaser.Scene {
     this.createNFTPreview(cx, cy);
 
     // Mint button
+    // Ensure button is at a very high depth to be visible over potential overlays
     const mintButton = this.createStyledButton(cx, height * 0.85, 'MINT NFT', 0xFFD700, () => {
       this.mintNFT();
     });
+    mintButton.setDepth(200); // Higher than share overlay (100)
 
     // Pulse animation for Mint button
     this.tweens.add({
@@ -121,15 +123,15 @@ export default class MintScreen extends Phaser.Scene {
     // Position it in the upper half of the card
     const imageY = cy - 80;
     const starSprite = this.add.sprite(cx, imageY, 'reformed-star');
-    starSprite.setScale(0.8);
+    starSprite.setScale(0.35); // Reduced scale (was 0.8) to fit better inside the card
     starSprite.setDepth(6);
 
     // Glow animation
     this.tweens.add({
       targets: starSprite,
+      scaleX: 0.4,
+      scaleY: 0.4,
       alpha: 0.9,
-      scaleX: 0.85,
-      scaleY: 0.85,
       duration: 1500,
       yoyo: true,
       repeat: -1,
