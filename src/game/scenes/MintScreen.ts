@@ -9,6 +9,8 @@ import { connectWallet, switchToBase, sendMintTransaction } from '../../utils/we
  * Mint Screen - Final scene showing NFT preview and mint button
  */
 export default class MintScreen extends Phaser.Scene {
+  private mintTxHash: string | null = null; // Store transaction hash for cast
+
   constructor() {
     super('MintScreen');
   }
@@ -230,6 +232,7 @@ export default class MintScreen extends Phaser.Scene {
       const hash = await sendMintTransaction(CONTRACT_ADDRESS, PRICE_ETH, address);
 
       if (hash) {
+        this.mintTxHash = hash; // Store for cast
         loadingText.setText('Transaction Sent!\nMinting...');
         
         // 5. Optional: Notify backend
@@ -291,12 +294,7 @@ export default class MintScreen extends Phaser.Scene {
     // Share Button
     const shareButton = this.createStyledButton(cx, cy, 'Cast Achievement', 0x9D4EDD, () => {
         console.log('🔘 Cast Achievement button clicked!');
-        const text = "I just reforged the Shattered Star in Cosmic Isles! 🌟\n\nPlay now:";
-        const url = "https://farcaster.xyz/miniapps/Hys_Qc3Q5KF_/cosmic-isles";
-        const shareUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(url)}`;
-        
-        console.log('   Opening Farcaster share URL...');
-        window.open(shareUrl, '_blank');
+        this.createFarcasterCast();
     });
     shareButton.setDepth(301);
 
@@ -317,5 +315,62 @@ export default class MintScreen extends Phaser.Scene {
     
     playAgainButton.on('pointerover', () => playAgainButton.setColor('#ffffff'));
     playAgainButton.on('pointerout', () => playAgainButton.setColor('#aaaaaa'));
+  }
+
+  private createFarcasterCast(): void {
+    const badges = questState.getEarnedBadges();
+    const playTime = getTotalPlayTime();
+    const playerName = playerState.playerName || 'Star Walker';
+    
+    // Build achievement message
+    const badgeList = badges.length > 0 
+      ? badges.map((badge, idx) => `${idx + 1}. ${badge}`).join('\n')
+      : 'Star Reforged';
+    
+    // Create comprehensive cast message
+    let castText = `🌟 STAR REFORGED! 🌟\n\n`;
+    castText += `Quest Complete: 3/3 Islands\n`;
+    castText += `Badges Earned:\n${badgeList}\n\n`;
+    
+    if (this.mintTxHash) {
+      castText += `✅ NFT Minted!\n`;
+      castText += `Tx: ${this.mintTxHash.substring(0, 10)}...${this.mintTxHash.substring(this.mintTxHash.length - 8)}\n\n`;
+    }
+    
+    castText += `Time: ${playTime} min\n`;
+    castText += `Player: ${playerName}\n\n`;
+    castText += `Play Cosmic Isles:`;
+    
+    // Game URL - use the actual Farcaster mini-app URL
+    const gameUrl = "https://farcaster.xyz/miniapps/Hys_Qc3Q5KF_/cosmic-isles";
+    
+    // Try to use Farcaster SDK to create cast directly
+    this.tryCreateCastWithSDK(castText, gameUrl).catch(() => {
+      // Fallback to Warpcast compose URL
+      const shareUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(gameUrl)}`;
+      console.log('   Opening Farcaster share URL (fallback)...');
+      window.open(shareUrl, '_blank');
+    });
+  }
+
+  private async tryCreateCastWithSDK(text: string, url: string): Promise<void> {
+    try {
+      const { default: sdk } = await import("@farcaster/miniapp-sdk");
+      
+      // Check if SDK has cast creation method
+      if (sdk.actions && typeof (sdk.actions as any).openUrl === 'function') {
+        // Use SDK to open compose URL
+        const composeUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(url)}`;
+        await (sdk.actions as any).openUrl(composeUrl);
+        console.log('✅ Cast opened via Farcaster SDK');
+        return;
+      }
+      
+      // If SDK doesn't support it, throw to use fallback
+      throw new Error('SDK cast method not available');
+    } catch (error) {
+      console.log('⚠️ Farcaster SDK cast method not available, using fallback');
+      throw error;
+    }
   }
 }

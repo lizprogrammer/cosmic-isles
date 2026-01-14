@@ -194,6 +194,24 @@ export default class Island1 extends Phaser.Scene {
           message, 
           this.currentNpc!
         );
+        
+        // If portal is open, show large door-open icon
+        if (this.collectedItems >= 3 && message === "Excellent! The portal is open.") {
+          const width = this.scale.width;
+          const height = this.scale.height;
+          const baseScale = Math.min(width / 1280, 1);
+          const doorScale = baseScale * 0.9 * 1.5; // Large door
+          
+          // Large door-open icon behind all objects (except background)
+          if (!this.currentObject || !(this.currentObject instanceof Phaser.GameObjects.Sprite) || this.currentObject.texture.key !== ASSETS.DOOR_OPEN) {
+            // Only create if it doesn't exist or is different
+            if (this.currentObject) this.currentObject.destroy();
+            this.currentObject = this.add.sprite(width * 0.5, height * 0.5, ASSETS.DOOR_OPEN)
+              .setScale(doorScale) // Large door
+              .setDepth(5) // Behind all objects but above background
+              .setAlpha(0.9); // Slightly transparent
+          }
+        }
       });
 
       // Spawn Active Item
