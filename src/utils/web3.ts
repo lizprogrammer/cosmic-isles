@@ -6,42 +6,80 @@ export interface EthereumProvider {
 }
 
 /**
+ * Get Farcaster SDK wallet address and provider
+ */
+let farcasterWalletAddress: string | null = null;
+
+const getFarcasterWallet = async (): Promise<{ address: string; provider: EthereumProvider | null } | null> => {
+  if (typeof window === 'undefined') return null;
+  
+  try {
+    const { default: sdk } = await import("@farcaster/miniapp-sdk");
+    
+    // Get the context which contains wallet info
+    const context = await sdk.context;
+    console.log('🔍 Farcaster context:', context);
+    
+    // Check if context has wallet address
+    if (context?.wallet?.address) {
+      const address = context.wallet.address;
+      console.log('✅ Found Farcaster wallet address:', address);
+      
+      // Check if SDK provides a wallet provider (EIP-1193 compatible)
+      // The SDK might expose wallet through sdk.wallet or through context
+      let walletProvider: EthereumProvider | null = null;
+      
+      // Try to find the wallet provider in the SDK
+      if ((sdk as any).wallet && typeof (sdk as any).wallet.request === 'function') {
+        walletProvider = (sdk as any).wallet as EthereumProvider;
+        console.log('✅ Using Farcaster SDK wallet provider');
+      } else if ((window as any).farcaster?.wallet) {
+        walletProvider = (window as any).farcaster.wallet as EthereumProvider;
+        console.log('✅ Using Farcaster wallet from window');
+      }
+      
+      return { address, provider: walletProvider };
+    }
+    
+    console.log('⚠️ Farcaster SDK available but no wallet found in context');
+  } catch (error) {
+    console.log('⚠️ Farcaster SDK not available:', error);
+  }
+  
+  return null;
+};
+
+/**
  * Get wallet provider - tries Farcaster SDK first, then any EIP-1193 provider
  */
 export const getProvider = async (): Promise<EthereumProvider | null> => {
-  if (typeof window === 'undefined') return null;
-  
   // Try Farcaster SDK first
-  try {
-    const { default: sdk } = await import("@farcaster/miniapp-sdk");
-    // Check if SDK has wallet context
-    const context = await sdk.context;
-    if (context?.wallet?.address) {
-      // Farcaster provides wallet context
-      console.log('✅ Using Farcaster wallet context');
-      // Return a provider-like object that uses Farcaster's wallet
-      return {
-        request: async (args: { method: string; params?: any[] }) => {
-          if (args.method === 'eth_requestAccounts') {
-            return [context.wallet.address];
-          }
-          if (args.method === 'eth_accounts') {
-            return [context.wallet.address];
-          }
-          // For other methods, try to use window.ethereum or window.coinbase
-          const fallbackProvider = getFallbackProvider();
-          if (fallbackProvider) {
-            return fallbackProvider.request(args);
-          }
-          throw new Error('Provider not available');
-        }
-      } as EthereumProvider;
-    }
-  } catch (error) {
-    console.log('Farcaster SDK wallet not available, trying fallback providers');
+  const farcasterWallet = await getFarcasterWallet();
+  
+  if (farcasterWallet?.provider) {
+    return farcasterWallet.provider;
   }
   
-  // Fallback to any EIP-1193 provider
+  if (farcasterWallet?.address) {
+    // We have the address but no provider - create a minimal provider wrapper
+    console.log('✅ Using Farcaster wallet address, creating provider wrapper');
+    return {
+      request: async (args: { method: string; params?: any[] }) => {
+        if (args.method === 'eth_requestAccounts' || args.method === 'eth_accounts') {
+          return [farcasterWallet.address];
+        }
+        if (args.method === 'eth_chainId') {
+          return BASE_CHAIN_ID; // Farcaster uses Base
+        }
+        // For transactions, we'll need to use Farcaster SDK's transaction methods
+        // This will be handled in sendMintTransaction
+        throw new Error('Use Farcaster SDK transaction methods directly');
+      }
+    } as EthereumProvider;
+  }
+  
+  // Fallback to any EIP-1193 provider (but warn user)
+  console.warn('⚠️ Farcaster wallet not available, falling back to external wallet');
   return getFallbackProvider();
 };
 
@@ -67,16 +105,27 @@ const getFallbackProvider = (): EthereumProvider | null => {
 };
 
 export const connectWallet = async (): Promise<string | null> => {
+  // Try Farcaster SDK first - this is the primary method
+  const farcasterWallet = await getFarcasterWallet();
+  
+  if (farcasterWallet?.address) {
+    farcasterWalletAddress = farcasterWallet.address;
+    console.log('✅ Connected to Farcaster wallet:', farcasterWallet.address);
+    return farcasterWallet.address;
+  }
+  
+  // Fallback to provider-based connection (shouldn't happen in Farcaster)
+  console.warn('⚠️ Farcaster wallet not found, trying fallback provider');
   const provider = await getProvider();
   if (!provider) {
-    alert("Please connect a wallet. Coinbase Wallet or other Base-compatible wallets are supported.");
+    alert("Unable to access Farcaster wallet. Please ensure you're using Warpcast or Farcaster app.");
     return null;
   }
 
   try {
     const accounts = await provider.request({ method: 'eth_requestAccounts' });
     if (accounts && accounts.length > 0) {
-      console.log('✅ Wallet connected:', accounts[0]);
+      console.log('✅ Wallet connected via fallback provider:', accounts[0]);
       return accounts[0];
     }
     return null;
@@ -147,6 +196,55 @@ export const sendMintTransaction = async (
   priceInEth: string,
   fromAddress: string
 ): Promise<string | null> => {
+  // Try Farcaster SDK first for sending transactions
+  try {
+    const { default: sdk } = await import("@farcaster/miniapp-sdk");
+    const context = await sdk.context;
+    
+    // Check if we have Farcaster wallet
+    if (context?.wallet?.address === fromAddress) {
+      console.log('📤 Sending transaction via Farcaster SDK...');
+      
+      // Convert ETH to Wei (hex)
+      const valueWei = BigInt(parseFloat(priceInEth) * 1e18).toString(16);
+      const data = '0x1249c58b'; // mint() function selector
+      
+      // Try to use Farcaster SDK's transaction method
+      // The SDK might expose this through sdk.wallet or sdk.actions
+      if ((sdk as any).wallet && typeof (sdk as any).wallet.request === 'function') {
+        const txHash = await (sdk as any).wallet.request({
+          method: 'eth_sendTransaction',
+          params: [
+            {
+              from: fromAddress,
+              to: contractAddress,
+              value: '0x' + valueWei,
+              data: data,
+            },
+          ],
+        });
+        
+        console.log('✅ Transaction sent via Farcaster SDK:', txHash);
+        return txHash;
+      }
+      
+      // Alternative: Check if SDK has a sendTransaction action
+      if ((sdk as any).actions?.sendTransaction) {
+        const txHash = await (sdk as any).actions.sendTransaction({
+          to: contractAddress,
+          value: '0x' + valueWei,
+          data: data,
+        });
+        
+        console.log('✅ Transaction sent via Farcaster actions:', txHash);
+        return txHash;
+      }
+    }
+  } catch (error) {
+    console.log('Farcaster SDK transaction method not available, trying provider...', error);
+  }
+  
+  // Fallback to provider (shouldn't be needed in Farcaster, but keep as backup)
   const provider = await getProvider();
   if (!provider) {
     console.error('No provider available for transaction');
@@ -156,12 +254,9 @@ export const sendMintTransaction = async (
   try {
     // Convert ETH to Wei (hex)
     const valueWei = BigInt(parseFloat(priceInEth) * 1e18).toString(16);
-    
-    // Encoded 'mint()' function call selector
-    // Standard ERC-721 mint() function selector
     const data = '0x1249c58b'; 
 
-    console.log('📤 Sending mint transaction...', {
+    console.log('📤 Sending mint transaction via provider...', {
       from: fromAddress,
       to: contractAddress,
       value: priceInEth + ' ETH',
@@ -175,7 +270,7 @@ export const sendMintTransaction = async (
           from: fromAddress,
           to: contractAddress,
           value: '0x' + valueWei,
-          data: data, // Call the mint function
+          data: data,
         },
       ],
     });
