@@ -195,7 +195,7 @@ export default class Island1 extends Phaser.Scene {
           this.currentNpc!
         );
         
-        // If portal is open, show large door-open icon
+        // If portal is open, show large door-open icon and make it interactive
         if (this.collectedItems >= 3 && message === "Excellent! The portal is open.") {
           const width = this.scale.width;
           const height = this.scale.height;
@@ -209,7 +209,14 @@ export default class Island1 extends Phaser.Scene {
             this.currentObject = this.add.sprite(width * 0.5, height * 0.5, ASSETS.DOOR_OPEN)
               .setScale(doorScale) // Large door
               .setDepth(5) // Behind all objects but above background
-              .setAlpha(0.9); // Slightly transparent
+              .setAlpha(0.9) // Slightly transparent
+              .setInteractive(); // Make it clickable
+            
+            // Make door-open interactive - player can click to proceed
+            this.currentObject.on('pointerdown', () => {
+              console.log('🔘 Door-open clicked in Room A! Proceeding to Room 2');
+              this.setupRoom(2);
+            });
           }
         }
       });
@@ -217,22 +224,7 @@ export default class Island1 extends Phaser.Scene {
       // Spawn Active Item
       this.spawnRoom1Items(assetScale, width, height);
 
-      // Exit (Portal)
-      this.exitObject = this.add.sprite(width * 0.85, height * 0.6, ASSETS.PORTAL)
-        .setScale(assetScale * 0.5)
-        .setDepth(15)
-        .setInteractive();
-      
-      this.exitObject.on('pointerdown', () => {
-        console.log(`🔘 Portal clicked! Collected items: ${this.collectedItems}/3`);
-        if (this.collectedItems >= 3) {
-          console.log('   ✅ All items collected, proceeding to Room 2');
-          this.setupRoom(2);
-        } else {
-          console.log(`   ❌ Need more items: ${this.collectedItems}/3`);
-          this.dialogueManager.show(`I need all 3 items!\nFound: ${this.collectedItems}/3`);
-        }
-      });
+      // No portal sprite - door-open will appear when NPC says portal is open
 
       // New Quest Announcement
       if (this.collectedItems === 0) {
@@ -308,20 +300,16 @@ export default class Island1 extends Phaser.Scene {
                   
                   isUnlocked = true;
                   
-                  // Large door-open icon behind all objects (except background)
+                  // Large door-open icon behind all objects (except background) - make it interactive
                   this.currentObject = this.add.sprite(width * 0.5, height * 0.5, ASSETS.DOOR_OPEN)
                     .setScale(assetScale * 1.5) // Large door
                     .setDepth(5) // Behind all objects (player depth 50, NPC depth 20, items depth 40) but above background (depth 0)
-                    .setAlpha(0.9); // Slightly transparent
+                    .setAlpha(0.9) // Slightly transparent
+                    .setInteractive(); // Make it clickable
                   
-                  // Portal appears for interaction
-                  this.exitObject = this.add.sprite(width * 0.5, height * 0.5, ASSETS.PORTAL)
-                    .setScale(assetScale * 0.6)
-                    .setDepth(15)
-                    .setInteractive();
-                  
-                  this.exitObject.on('pointerdown', () => {
-                      console.log('🔘 Portal clicked in Room 2! Proceeding to Room 3');
+                  // Player can click door-open to proceed
+                  this.currentObject.on('pointerdown', () => {
+                      console.log('🔘 Door-open clicked in Room 2! Proceeding to Room 3');
                       this.dialogueManager.show(DIALOGUES.VILLAGER_UNLOCK);
                       this.time.delayedCall(1000, () => this.setupRoom(3));
                   });
@@ -431,20 +419,16 @@ export default class Island1 extends Phaser.Scene {
                this.npcDialogueState.set(this.currentNpc, "You may enter the portal.");
                this.canExit = true;
                
-               // Large door-open icon behind all objects (except background)
+               // Large door-open icon behind all objects (except background) - make it interactive
                this.currentObject = this.add.sprite(width * 0.5, height * 0.5, ASSETS.DOOR_OPEN)
                  .setScale(assetScale * 1.5) // Large door
                  .setDepth(5) // Behind all objects but above background
-                 .setAlpha(0.9); // Slightly transparent
-               
-               // Portal appears for interaction
-               this.exitObject = this.add.sprite(width * 0.5, height * 0.5, ASSETS.PORTAL)
-                 .setScale(assetScale * 0.6)
-                 .setDepth(15)
-                 .setInteractive();
+                 .setAlpha(0.9) // Slightly transparent
+                 .setInteractive(); // Make it clickable
                  
-               this.exitObject.on('pointerdown', () => {
-                 console.log(`🔘 Portal clicked in Room 3! canExit: ${this.canExit}`);
+               // Player can click door-open to proceed
+               this.currentObject.on('pointerdown', () => {
+                 console.log(`🔘 Door-open clicked in Room 3! canExit: ${this.canExit}`);
                  if (this.canExit) {
                    console.log('   ✅ Quest complete! Transitioning to Star Sanctum');
                    this.completeQuest();
