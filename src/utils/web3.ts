@@ -6,44 +6,105 @@ export interface EthereumProvider {
 }
 
 /**
- * Get Farcaster SDK wallet address and provider
+ * Check if we're running in Farcaster/Warpcast environment
  */
-let farcasterWalletAddress: string | null = null;
+const isInFarcaster = async (): Promise<boolean> => {
+  if (typeof window === 'undefined') return false;
+  
+  try {
+    const { default: sdk } = await import("@farcaster/miniapp-sdk");
+    const context = await sdk.context;
+    return !!context;
+  } catch (error) {
+    return false;
+  }
+};
 
-const getFarcasterWallet = async (): Promise<{ address: string; provider: EthereumProvider | null } | null> => {
+/**
+ * Get Farcaster SDK wallet provider - this is the correct way to access Farcaster wallet
+ */
+const getFarcasterProvider = async (): Promise<EthereumProvider | null> => {
   if (typeof window === 'undefined') return null;
   
   try {
     const { default: sdk } = await import("@farcaster/miniapp-sdk");
     
-    // Get the context which contains wallet info
-    const context = await sdk.context;
-    console.log('🔍 Farcaster context:', context);
+    console.log('🔍 Checking Farcaster SDK...', {
+      hasWallet: !!sdk.wallet,
+      walletMethods: sdk.wallet ? Object.keys(sdk.wallet) : []
+    });
     
-    // Check if context has wallet address
-    if (context?.wallet?.address) {
-      const address = context.wallet.address;
-      console.log('✅ Found Farcaster wallet address:', address);
-      
-      // Check if SDK provides a wallet provider (EIP-1193 compatible)
-      // The SDK might expose wallet through sdk.wallet or through context
-      let walletProvider: EthereumProvider | null = null;
-      
-      // Try to find the wallet provider in the SDK
-      if ((sdk as any).wallet && typeof (sdk as any).wallet.request === 'function') {
-        walletProvider = (sdk as any).wallet as EthereumProvider;
-        console.log('✅ Using Farcaster SDK wallet provider');
-      } else if ((window as any).farcaster?.wallet) {
-        walletProvider = (window as any).farcaster.wallet as EthereumProvider;
-        console.log('✅ Using Farcaster wallet from window');
-      }
-      
-      return { address, provider: walletProvider };
+    // Ensure SDK is ready
+    try {
+      await sdk.actions.ready();
+      console.log('✅ Farcaster SDK ready');
+    } catch (readyError) {
+      console.log('⚠️ SDK ready() failed (might already be ready):', readyError);
     }
     
-    console.log('⚠️ Farcaster SDK available but no wallet found in context');
+    // Check if we're in Farcaster environment
+    const context = await sdk.context;
+    if (!context) {
+      console.log('⚠️ Not in Farcaster environment - no context available');
+      return null;
+    }
+    
+    console.log('🔍 Farcaster context found:', {
+      hasWallet: !!context.wallet,
+      walletAddress: context.wallet?.address,
+      contextKeys: Object.keys(context)
+    });
+    
+    // Method 1: Use the SDK's wallet.getEthereumProvider() method (official way)
+    if (sdk.wallet && typeof sdk.wallet.getEthereumProvider === 'function') {
+      try {
+        const provider = sdk.wallet.getEthereumProvider();
+        console.log('✅ Using Farcaster SDK getEthereumProvider()');
+        return provider as EthereumProvider;
+      } catch (err) {
+        console.log('⚠️ getEthereumProvider() failed:', err);
+      }
+    }
+    
+    // Method 2: Check if wallet is available directly as EIP-1193 provider
+    if (sdk.wallet && typeof sdk.wallet.request === 'function') {
+      console.log('✅ Using Farcaster SDK wallet.request() directly');
+      return sdk.wallet as EthereumProvider;
+    }
+    
+    // Method 3: Check if wallet is exposed on window (some SDK versions)
+    if ((window as any).farcaster?.wallet) {
+      console.log('✅ Using Farcaster wallet from window.farcaster');
+      return (window as any).farcaster.wallet as EthereumProvider;
+    }
+    
+    // Method 4: Use context wallet address and create minimal provider
+    if (context.wallet?.address) {
+      console.log('✅ Found Farcaster wallet address in context:', context.wallet.address);
+      // Return a provider that can at least get the address
+      // Note: Transactions might need the actual provider
+      return {
+        request: async (args: { method: string; params?: any[] }) => {
+          if (args.method === 'eth_requestAccounts' || args.method === 'eth_accounts') {
+            return [context.wallet.address];
+          }
+          if (args.method === 'eth_chainId') {
+            return BASE_CHAIN_ID; // Farcaster uses Base
+          }
+          // For transactions, try to find the actual provider
+          throw new Error('Transaction methods require Farcaster wallet provider. Please ensure you are using the latest Warpcast version.');
+        }
+      } as EthereumProvider;
+    }
+    
+    console.log('⚠️ Farcaster SDK available but no wallet access found');
+    console.log('   SDK structure:', {
+      sdkKeys: Object.keys(sdk),
+      walletKeys: sdk.wallet ? Object.keys(sdk.wallet) : 'no wallet',
+      contextKeys: Object.keys(context)
+    });
   } catch (error) {
-    console.log('⚠️ Farcaster SDK not available:', error);
+    console.error('❌ Farcaster SDK error:', error);
   }
   
   return null;
@@ -53,32 +114,29 @@ const getFarcasterWallet = async (): Promise<{ address: string; provider: Ethere
  * Get wallet provider - tries Farcaster SDK first, then any EIP-1193 provider
  */
 export const getProvider = async (): Promise<EthereumProvider | null> => {
-  // Try Farcaster SDK first
-  const farcasterWallet = await getFarcasterWallet();
+  // Try Farcaster SDK first - this should work when in Farcaster/Warpcast
+  const farcasterProvider = await getFarcasterProvider();
   
-  if (farcasterWallet?.provider) {
-    return farcasterWallet.provider;
+  if (farcasterProvider) {
+    console.log('✅ Using Farcaster wallet provider - no MetaMask needed!');
+    return farcasterProvider;
   }
   
-  if (farcasterWallet?.address) {
-    // We have the address but no provider - create a minimal provider wrapper
-    console.log('✅ Using Farcaster wallet address, creating provider wrapper');
-    return {
-      request: async (args: { method: string; params?: any[] }) => {
-        if (args.method === 'eth_requestAccounts' || args.method === 'eth_accounts') {
-          return [farcasterWallet.address];
-        }
-        if (args.method === 'eth_chainId') {
-          return BASE_CHAIN_ID; // Farcaster uses Base
-        }
-        // For transactions, we'll need to use Farcaster SDK's transaction methods
-        // This will be handled in sendMintTransaction
-        throw new Error('Use Farcaster SDK transaction methods directly');
-      }
-    } as EthereumProvider;
+  // Only fallback if we're NOT in Farcaster environment
+  // Check if we're in Farcaster by looking for SDK context
+  try {
+    const { default: sdk } = await import("@farcaster/miniapp-sdk");
+    const context = await sdk.context;
+    if (context) {
+      // We're in Farcaster but wallet provider not available
+      console.error('❌ In Farcaster but wallet provider not accessible. Check SDK version.');
+      return null; // Don't fallback to MetaMask if we're in Farcaster
+    }
+  } catch (e) {
+    // Not in Farcaster, allow fallback
   }
   
-  // Fallback to any EIP-1193 provider (but warn user)
+  // Fallback to any EIP-1193 provider (only if not in Farcaster)
   console.warn('⚠️ Farcaster wallet not available, falling back to external wallet');
   return getFallbackProvider();
 };
@@ -105,28 +163,32 @@ const getFallbackProvider = (): EthereumProvider | null => {
 };
 
 export const connectWallet = async (): Promise<string | null> => {
-  // Try Farcaster SDK first - this is the primary method
-  const farcasterWallet = await getFarcasterWallet();
+  // First check if we're in Farcaster
+  const inFarcaster = await isInFarcaster();
   
-  if (farcasterWallet?.address) {
-    farcasterWalletAddress = farcasterWallet.address;
-    console.log('✅ Connected to Farcaster wallet:', farcasterWallet.address);
-    return farcasterWallet.address;
+  if (inFarcaster) {
+    console.log('🔍 Detected Farcaster environment, using Farcaster wallet...');
   }
   
-  // Fallback to provider-based connection (shouldn't happen in Farcaster)
-  console.warn('⚠️ Farcaster wallet not found, trying fallback provider');
+  // Try Farcaster SDK provider first - this is the primary method
   const provider = await getProvider();
+  
   if (!provider) {
-    alert("Unable to access Farcaster wallet. Please ensure you're using Warpcast or Farcaster app.");
+    if (inFarcaster) {
+      alert("Unable to access Farcaster wallet. Please ensure you're using the latest version of Warpcast.");
+    } else {
+      alert("Please open this app in Warpcast or Farcaster to use your Farcaster wallet. External wallets are not supported.");
+    }
     return null;
   }
 
   try {
+    // Request accounts - this will use Farcaster wallet if available
     const accounts = await provider.request({ method: 'eth_requestAccounts' });
     if (accounts && accounts.length > 0) {
-      console.log('✅ Wallet connected via fallback provider:', accounts[0]);
-      return accounts[0];
+      const address = accounts[0];
+      console.log('✅ Wallet connected:', address, inFarcaster ? '(Farcaster wallet)' : '(external wallet)');
+      return address;
     }
     return null;
   } catch (error) {
@@ -147,12 +209,17 @@ export const switchToBase = async (isTestnet = false): Promise<boolean> => {
   try {
     // Check current chain
     const currentChainId = await provider.request({ method: 'eth_chainId' });
-    if (currentChainId === chainId) {
+    // Convert to hex if needed
+    const currentChainIdHex = typeof currentChainId === 'string' 
+      ? currentChainId 
+      : '0x' + currentChainId.toString(16);
+    
+    if (currentChainIdHex === chainId) {
       console.log('✅ Already on Base network');
       return true;
     }
     
-    // Try to switch
+    // Try to switch - Farcaster wallet should handle this
     await provider.request({
       method: 'wallet_switchEthereumChain',
       params: [{ chainId }],
@@ -196,55 +263,7 @@ export const sendMintTransaction = async (
   priceInEth: string,
   fromAddress: string
 ): Promise<string | null> => {
-  // Try Farcaster SDK first for sending transactions
-  try {
-    const { default: sdk } = await import("@farcaster/miniapp-sdk");
-    const context = await sdk.context;
-    
-    // Check if we have Farcaster wallet
-    if (context?.wallet?.address === fromAddress) {
-      console.log('📤 Sending transaction via Farcaster SDK...');
-      
-      // Convert ETH to Wei (hex)
-      const valueWei = BigInt(parseFloat(priceInEth) * 1e18).toString(16);
-      const data = '0x1249c58b'; // mint() function selector
-      
-      // Try to use Farcaster SDK's transaction method
-      // The SDK might expose this through sdk.wallet or sdk.actions
-      if ((sdk as any).wallet && typeof (sdk as any).wallet.request === 'function') {
-        const txHash = await (sdk as any).wallet.request({
-          method: 'eth_sendTransaction',
-          params: [
-            {
-              from: fromAddress,
-              to: contractAddress,
-              value: '0x' + valueWei,
-              data: data,
-            },
-          ],
-        });
-        
-        console.log('✅ Transaction sent via Farcaster SDK:', txHash);
-        return txHash;
-      }
-      
-      // Alternative: Check if SDK has a sendTransaction action
-      if ((sdk as any).actions?.sendTransaction) {
-        const txHash = await (sdk as any).actions.sendTransaction({
-          to: contractAddress,
-          value: '0x' + valueWei,
-          data: data,
-        });
-        
-        console.log('✅ Transaction sent via Farcaster actions:', txHash);
-        return txHash;
-      }
-    }
-  } catch (error) {
-    console.log('Farcaster SDK transaction method not available, trying provider...', error);
-  }
-  
-  // Fallback to provider (shouldn't be needed in Farcaster, but keep as backup)
+  // Get provider - this will be Farcaster wallet if available
   const provider = await getProvider();
   if (!provider) {
     console.error('No provider available for transaction');
@@ -254,15 +273,16 @@ export const sendMintTransaction = async (
   try {
     // Convert ETH to Wei (hex)
     const valueWei = BigInt(parseFloat(priceInEth) * 1e18).toString(16);
-    const data = '0x1249c58b'; 
+    const data = '0x1249c58b'; // mint() function selector
 
-    console.log('📤 Sending mint transaction via provider...', {
+    console.log('📤 Sending mint transaction via Farcaster wallet...', {
       from: fromAddress,
       to: contractAddress,
       value: priceInEth + ' ETH',
       chainId: BASE_CHAIN_ID
     });
 
+    // Use the provider (which is Farcaster wallet if available)
     const txHash = await provider.request({
       method: 'eth_sendTransaction',
       params: [
@@ -275,7 +295,7 @@ export const sendMintTransaction = async (
       ],
     });
 
-    console.log('✅ Transaction sent:', txHash);
+    console.log('✅ Transaction sent via Farcaster wallet:', txHash);
     return txHash;
   } catch (error) {
     console.error("❌ Mint transaction failed", error);
