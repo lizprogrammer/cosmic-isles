@@ -167,13 +167,13 @@ export default class Island1 extends Phaser.Scene {
         // Check if we've already said this message (prevent repetition)
         let message = "";
         if (this.collectedItems >= 3) {
-            message = "Excellent! The portal is open.";
+            message = "All items collected!\nYou may proceed to the next challenge.";
         } else if (!questState.data.island1.completed) {
-            message = "Find the Glowing Stone!\nIt's hidden in the bushes.";
+            message = "Seek the Glowing Stone!\nIt lies hidden among the bushes.";
         } else if (!questState.data.island2.completed) {
-            message = "Catch the Ember Core!\nIt's floating around.";
+            message = "The Ember Core drifts nearby.\nCatch it as it moves!";
         } else if (!questState.data.island3.completed) {
-            message = "Find the Song Seed!\nCheck the flower piles.";
+            message = "The Song Seed awaits.\nSearch the flower piles carefully.";
         }
         
         // Check if NPC already said this exact message
@@ -196,7 +196,7 @@ export default class Island1 extends Phaser.Scene {
         );
         
         // If portal is open, show large door-open icon and make it interactive
-        if (this.collectedItems >= 3 && message === "Excellent! The portal is open.") {
+        if (this.collectedItems >= 3 && message.includes("You may proceed")) {
           const width = this.scale.width;
           const height = this.scale.height;
           const baseScale = Math.min(width / 1280, 1);
@@ -281,7 +281,7 @@ export default class Island1 extends Phaser.Scene {
                  this,
                  this.player!.x,
                  this.player!.y - 120, // Higher on screen
-                 "I have all 3 items!",
+                 "Yes! I have them all!",
                  this.player!.container
                );
                
@@ -293,10 +293,10 @@ export default class Island1 extends Phaser.Scene {
                     this,
                     this.currentNpc!.x,
                     this.currentNpc!.y - 120, // Higher on screen
-                    "The door opens!",
+                    "The path is clear!\nYou may proceed forward.",
                     this.currentNpc!
                   );
-                  this.npcDialogueState.set(this.currentNpc, "The door opens!");
+                  this.npcDialogueState.set(this.currentNpc, "The path is clear!");
                   
                   isUnlocked = true;
                   
@@ -310,7 +310,7 @@ export default class Island1 extends Phaser.Scene {
                   // Player can click door-open to proceed
                   this.currentObject.on('pointerdown', () => {
                       console.log('🔘 Door-open clicked in Room 2! Proceeding to Room 3');
-                      this.dialogueManager.show(DIALOGUES.VILLAGER_UNLOCK);
+                      this.dialogueManager.show("Thank you! Onward!");
                       this.time.delayedCall(1000, () => this.setupRoom(3));
                   });
                });
@@ -319,7 +319,7 @@ export default class Island1 extends Phaser.Scene {
                  this,
                  this.player!.x,
                  this.player!.y - 120, // Higher on screen
-                 "I'm still looking.",
+                 "Not yet. I'm still searching.",
                  this.player!.container
                );
              }
@@ -329,9 +329,9 @@ export default class Island1 extends Phaser.Scene {
         // Step 1: NPC Speaks (check if already said)
         let message = "";
         if (this.collectedItems >= 3) {
-            message = "Do you have the items?";
+            message = "Have you gathered\nall three sacred items?";
         } else {
-            message = "I need 3 sacred items\nto unlock this door.";
+            message = "This door requires\n3 sacred items to open.";
         }
         
         const lastMessage = this.npcDialogueState.get(this.currentNpc);
@@ -380,7 +380,7 @@ export default class Island1 extends Phaser.Scene {
         // If can exit, don't repeat dialogue
         if (this.canExit) {
              const lastMessage = this.npcDialogueState.get(this.currentNpc);
-             if (lastMessage === "The stars await you." && this.currentBubble && this.currentBubble.visible) {
+             if (lastMessage === "The path forward is open." && this.currentBubble && this.currentBubble.visible) {
                  return; // Don't repeat
              }
              this.currentBubble?.destroy();
@@ -388,10 +388,10 @@ export default class Island1 extends Phaser.Scene {
                 this,
                 this.currentNpc!.x,
                 this.currentNpc!.y - 120, // Higher on screen
-                "The stars await you.",
+                "The path forward is open.",
                 this.currentNpc!
              );
-             this.npcDialogueState.set(this.currentNpc, "The stars await you.");
+             this.npcDialogueState.set(this.currentNpc, "The path forward is open.");
              return;
         }
 
@@ -402,7 +402,7 @@ export default class Island1 extends Phaser.Scene {
               this,
               this.player!.x,
               this.player!.y - 120, // Higher on screen
-              "Thank you, Sage.",
+              "Thank you for your guidance, Sage.",
               this.player!.container
             );
             
@@ -413,10 +413,10 @@ export default class Island1 extends Phaser.Scene {
                  this,
                  this.currentNpc!.x,
                  this.currentNpc!.y - 120, // Higher on screen
-                 "You may enter the portal.",
+                 "The way is clear.\nProceed to the Star Sanctum.",
                  this.currentNpc!
                );
-               this.npcDialogueState.set(this.currentNpc, "You may enter the portal.");
+               this.npcDialogueState.set(this.currentNpc, "The way is clear.");
                this.canExit = true;
                
                // Large door-open icon behind all objects (except background) - make it interactive
@@ -441,7 +441,7 @@ export default class Island1 extends Phaser.Scene {
         }
 
         // Step 1: NPC Speaks (check if already said)
-        const message = "The Sanctuary is open.";
+        const message = "Welcome, Star Walker.\nYour quest nears completion.";
         const lastMessage = this.npcDialogueState.get(this.currentNpc);
         if (lastMessage === message && this.currentBubble && this.currentBubble.visible) {
             return; // Don't repeat
