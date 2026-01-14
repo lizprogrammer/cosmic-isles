@@ -58,9 +58,16 @@ const getFarcasterProvider = async (): Promise<EthereumProvider | null> => {
     // Method 1: Use the SDK's wallet.getEthereumProvider() method (official way)
     if (sdk.wallet && typeof sdk.wallet.getEthereumProvider === 'function') {
       try {
-        const provider = sdk.wallet.getEthereumProvider();
+        const providerResult = sdk.wallet.getEthereumProvider();
+        // Handle both Promise and direct return
+        const provider = providerResult instanceof Promise 
+          ? await providerResult 
+          : providerResult;
         console.log('✅ Using Farcaster SDK getEthereumProvider()');
-        return provider as EthereumProvider;
+        // The provider should have a request method
+        if (provider && typeof (provider as any).request === 'function') {
+          return provider as EthereumProvider;
+        }
       } catch (err) {
         console.log('⚠️ getEthereumProvider() failed:', err);
       }
