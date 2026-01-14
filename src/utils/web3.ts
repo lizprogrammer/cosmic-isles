@@ -50,8 +50,8 @@ const getFarcasterProvider = async (): Promise<EthereumProvider | null> => {
     }
     
     console.log('🔍 Farcaster context found:', {
-      hasWallet: !!context.wallet,
-      walletAddress: context.wallet?.address,
+      hasWallet: !!(context as any).wallet,
+      walletAddress: (context as any).wallet?.address,
       contextKeys: Object.keys(context)
     });
     
@@ -79,14 +79,15 @@ const getFarcasterProvider = async (): Promise<EthereumProvider | null> => {
     }
     
     // Method 4: Use context wallet address and create minimal provider
-    if (context.wallet?.address) {
-      console.log('✅ Found Farcaster wallet address in context:', context.wallet.address);
+    const contextWallet = (context as any).wallet;
+    if (contextWallet?.address) {
+      console.log('✅ Found Farcaster wallet address in context:', contextWallet.address);
       // Return a provider that can at least get the address
       // Note: Transactions might need the actual provider
       return {
         request: async (args: { method: string; params?: any[] }) => {
           if (args.method === 'eth_requestAccounts' || args.method === 'eth_accounts') {
-            return [context.wallet.address];
+            return [contextWallet.address];
           }
           if (args.method === 'eth_chainId') {
             return BASE_CHAIN_ID; // Farcaster uses Base
