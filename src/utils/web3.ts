@@ -73,10 +73,16 @@ const getFarcasterProvider = async (): Promise<EthereumProvider | null> => {
       }
     }
     
-    // Method 2: Check if wallet is available directly as EIP-1193 provider
-    if (sdk.wallet && typeof sdk.wallet.request === 'function') {
+    // Method 2: Check if wallet.ethProvider is available (some SDK versions expose it directly)
+    if (sdk.wallet && (sdk.wallet as any).ethProvider && typeof (sdk.wallet as any).ethProvider.request === 'function') {
+      console.log('✅ Using Farcaster SDK wallet.ethProvider');
+      return (sdk.wallet as any).ethProvider as EthereumProvider;
+    }
+    
+    // Method 2b: Check if wallet has request method directly (older SDK versions)
+    if (sdk.wallet && typeof (sdk.wallet as any).request === 'function') {
       console.log('✅ Using Farcaster SDK wallet.request() directly');
-      return sdk.wallet as EthereumProvider;
+      return sdk.wallet as any as EthereumProvider;
     }
     
     // Method 3: Check if wallet is exposed on window (some SDK versions)
