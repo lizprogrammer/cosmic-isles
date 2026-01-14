@@ -5,23 +5,81 @@ export interface EthereumProvider {
   request: (args: { method: string; params?: any[] }) => Promise<any>;
 }
 
-export const getProvider = (): EthereumProvider | null => {
-  if (typeof window !== 'undefined' && (window as any).ethereum) {
+/**
+ * Get wallet provider - tries Farcaster SDK first, then any EIP-1193 provider
+ */
+export const getProvider = async (): Promise<EthereumProvider | null> => {
+  if (typeof window === 'undefined') return null;
+  
+  // Try Farcaster SDK first
+  try {
+    const { default: sdk } = await import("@farcaster/miniapp-sdk");
+    // Check if SDK has wallet context
+    const context = await sdk.context;
+    if (context?.wallet?.address) {
+      // Farcaster provides wallet context
+      console.log('✅ Using Farcaster wallet context');
+      // Return a provider-like object that uses Farcaster's wallet
+      return {
+        request: async (args: { method: string; params?: any[] }) => {
+          if (args.method === 'eth_requestAccounts') {
+            return [context.wallet.address];
+          }
+          if (args.method === 'eth_accounts') {
+            return [context.wallet.address];
+          }
+          // For other methods, try to use window.ethereum or window.coinbase
+          const fallbackProvider = getFallbackProvider();
+          if (fallbackProvider) {
+            return fallbackProvider.request(args);
+          }
+          throw new Error('Provider not available');
+        }
+      } as EthereumProvider;
+    }
+  } catch (error) {
+    console.log('Farcaster SDK wallet not available, trying fallback providers');
+  }
+  
+  // Fallback to any EIP-1193 provider
+  return getFallbackProvider();
+};
+
+/**
+ * Get fallback provider (Coinbase Wallet, MetaMask, or any EIP-1193 provider)
+ */
+const getFallbackProvider = (): EthereumProvider | null => {
+  if (typeof window === 'undefined') return null;
+  
+  // Try Coinbase Wallet first (common in Farcaster ecosystem)
+  if ((window as any).coinbase?.ethereum) {
+    console.log('✅ Using Coinbase Wallet');
+    return (window as any).coinbase.ethereum;
+  }
+  
+  // Try any EIP-1193 provider
+  if ((window as any).ethereum) {
+    console.log('✅ Using EIP-1193 provider (MetaMask or other)');
     return (window as any).ethereum;
   }
+  
   return null;
 };
 
 export const connectWallet = async (): Promise<string | null> => {
-  const provider = getProvider();
+  const provider = await getProvider();
   if (!provider) {
-    alert("Please install a crypto wallet like Coinbase Wallet or MetaMask.");
+    alert("Please connect a wallet. Coinbase Wallet or other Base-compatible wallets are supported.");
     return null;
   }
 
   try {
     const accounts = await provider.request({ method: 'eth_requestAccounts' });
-    return accounts[0];
+    if (accounts && accounts.length > 0) {
+      console.log('✅ Wallet connected:', accounts[0]);
+      return accounts[0];
+    }
+    return null;
   } catch (error) {
     console.error("User rejected connection", error);
     return null;
@@ -29,20 +87,33 @@ export const connectWallet = async (): Promise<string | null> => {
 };
 
 export const switchToBase = async (isTestnet = false): Promise<boolean> => {
-  const provider = getProvider();
-  if (!provider) return false;
+  const provider = await getProvider();
+  if (!provider) {
+    console.error('No provider available to switch network');
+    return false;
+  }
 
   const chainId = isTestnet ? BASE_SEPOLIA_CHAIN_ID : BASE_CHAIN_ID;
   
   try {
+    // Check current chain
+    const currentChainId = await provider.request({ method: 'eth_chainId' });
+    if (currentChainId === chainId) {
+      console.log('✅ Already on Base network');
+      return true;
+    }
+    
+    // Try to switch
     await provider.request({
       method: 'wallet_switchEthereumChain',
       params: [{ chainId }],
     });
+    console.log('✅ Switched to Base network');
     return true;
   } catch (error: any) {
-    // This error code indicates that the chain has not been added to MetaMask.
+    // This error code indicates that the chain has not been added to the wallet.
     if (error.code === 4902) {
+      console.log('Base network not found, adding it...');
       try {
         await provider.request({
           method: 'wallet_addEthereumChain',
@@ -60,12 +131,13 @@ export const switchToBase = async (isTestnet = false): Promise<boolean> => {
             },
           ],
         });
+        console.log('✅ Base network added and switched');
         return true;
       } catch (addError) {
-        console.error(addError);
+        console.error('Failed to add Base network:', addError);
       }
     }
-    console.error(error);
+    console.error('Failed to switch to Base network:', error);
     return false;
   }
 };
@@ -75,21 +147,26 @@ export const sendMintTransaction = async (
   priceInEth: string,
   fromAddress: string
 ): Promise<string | null> => {
-  const provider = getProvider();
-  if (!provider) return null;
+  const provider = await getProvider();
+  if (!provider) {
+    console.error('No provider available for transaction');
+    return null;
+  }
 
   try {
     // Convert ETH to Wei (hex)
-    // 1 ETH = 10^18 Wei. 0.001 ETH = 10^15 Wei.
-    // Simple conversion for standard values
     const valueWei = BigInt(parseFloat(priceInEth) * 1e18).toString(16);
     
-    // Encoded 'mint()' function call selector: 0x1249c58b (example)
-    // For a standard mint(), it might just be the payable fallback or a specific function.
-    // We'll assume a standard 'mint()' function with no args for simplicity, 
-    // or the user can provide the data. 
-    // Selector for `mint()` is `0x1249c58b`.
+    // Encoded 'mint()' function call selector
+    // Standard ERC-721 mint() function selector
     const data = '0x1249c58b'; 
+
+    console.log('📤 Sending mint transaction...', {
+      from: fromAddress,
+      to: contractAddress,
+      value: priceInEth + ' ETH',
+      chainId: BASE_CHAIN_ID
+    });
 
     const txHash = await provider.request({
       method: 'eth_sendTransaction',
@@ -103,9 +180,10 @@ export const sendMintTransaction = async (
       ],
     });
 
+    console.log('✅ Transaction sent:', txHash);
     return txHash;
   } catch (error) {
-    console.error("Mint transaction failed", error);
+    console.error("❌ Mint transaction failed", error);
     return null;
   }
 };

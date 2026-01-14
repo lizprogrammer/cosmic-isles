@@ -23,13 +23,13 @@ export class ProgressUI {
     this.collectionContainer.setDepth(100); // Ensure it's visible above everything
     this.container.add(this.collectionContainer);
     
-    // Add label for "Items Collected" - smaller font
-    const label = scene.add.text(0, -2, 'Items Collected:', {
-      fontSize: '12px',
+    // Add label for "Items Collected" - tiny font to match tiny icons
+    const label = scene.add.text(0, -1, 'Items Collected:', {
+      fontSize: '10px',
       color: '#FFD700',
       fontFamily: 'Arial, sans-serif',
       stroke: '#000000',
-      strokeThickness: 1
+      strokeThickness: 0.5
     });
     this.collectionContainer.add(label);
     
@@ -114,24 +114,24 @@ export class ProgressUI {
    * Add a collected item icon to the UI
    */
   public addCollectedItem(textureKey: string): void {
-    const iconSize = 12; // Very small icons for compact list
-    const spacing = 4; // Minimal spacing between icons
-    const labelHeight = 18; // Space for "Items Collected:" label
+    const iconSize = 8; // Tiny icons - very small for compact list
+    const spacing = 3; // Minimal spacing between icons
+    const labelHeight = 16; // Space for "Items Collected:" label
     const x = this.collectedItemCount * (iconSize + spacing);
     const y = labelHeight + iconSize/2; // Position below label
     
-    // Background for item (very small circle)
+    // Background for item (tiny circle)
     const bg = this.scene.add.graphics();
-    bg.fillStyle(0x000000, 0.6);
-    bg.fillCircle(x + iconSize/2, y, iconSize/2 + 1);
-    bg.lineStyle(1, 0xFFD700, 0.8);
-    bg.strokeCircle(x + iconSize/2, y, iconSize/2 + 1);
+    bg.fillStyle(0x000000, 0.5);
+    bg.fillCircle(x + iconSize/2, y, iconSize/2 + 0.5);
+    bg.lineStyle(0.5, 0xFFD700, 0.7);
+    bg.strokeCircle(x + iconSize/2, y, iconSize/2 + 0.5);
     this.collectionContainer.add(bg);
 
-    // Item Icon - force to exact small size
+    // Item Icon - force to exact tiny size
     const icon = this.scene.add.sprite(x + iconSize/2, y, textureKey);
     
-    // Force icon to be exactly iconSize (12px) regardless of source image size
+    // Force icon to be exactly iconSize (8px) regardless of source image size
     icon.setDisplaySize(iconSize, iconSize);
     icon.setDepth(101); // Above background
     this.collectionContainer.add(icon);
