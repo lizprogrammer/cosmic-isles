@@ -18,8 +18,20 @@ export class ProgressUI {
     this.container = scene.add.container(0, 0);
     this.container.setDepth(90);
     
-    this.collectionContainer = scene.add.container(20, 50);
+    // Position "Items Collected" section at top-left, clearly visible
+    this.collectionContainer = scene.add.container(20, 20);
+    this.collectionContainer.setDepth(100); // Ensure it's visible above everything
     this.container.add(this.collectionContainer);
+    
+    // Add label for "Items Collected" - smaller font
+    const label = scene.add.text(0, -2, 'Items Collected:', {
+      fontSize: '12px',
+      color: '#FFD700',
+      fontFamily: 'Arial, sans-serif',
+      stroke: '#000000',
+      strokeThickness: 1
+    });
+    this.collectionContainer.add(label);
     
     this.createUI();
   }
@@ -102,38 +114,34 @@ export class ProgressUI {
    * Add a collected item icon to the UI
    */
   public addCollectedItem(textureKey: string): void {
-    const iconSize = 15; // Much smaller icons
-    const spacing = 5;
+    const iconSize = 12; // Very small icons for compact list
+    const spacing = 4; // Minimal spacing between icons
+    const labelHeight = 18; // Space for "Items Collected:" label
     const x = this.collectedItemCount * (iconSize + spacing);
+    const y = labelHeight + iconSize/2; // Position below label
     
-    // Background for item
+    // Background for item (very small circle)
     const bg = this.scene.add.graphics();
-    bg.fillStyle(0x000000, 0.5);
-    bg.fillCircle(x + iconSize/2, iconSize/2, iconSize/2 + 2);
-    bg.lineStyle(1.5, 0xFFD700, 1);
-    bg.strokeCircle(x + iconSize/2, iconSize/2, iconSize/2 + 2);
+    bg.fillStyle(0x000000, 0.6);
+    bg.fillCircle(x + iconSize/2, y, iconSize/2 + 1);
+    bg.lineStyle(1, 0xFFD700, 0.8);
+    bg.strokeCircle(x + iconSize/2, y, iconSize/2 + 1);
     this.collectionContainer.add(bg);
 
-    // Item Icon
-    const icon = this.scene.add.sprite(x + iconSize/2, iconSize/2, textureKey);
+    // Item Icon - force to exact small size
+    const icon = this.scene.add.sprite(x + iconSize/2, y, textureKey);
     
-    // Safely scale the icon to fit within iconSize
-    if (icon.width > 0 && icon.height > 0) {
-        const scale = iconSize / Math.max(icon.width, icon.height);
-        icon.setScale(scale);
-    } else {
-        // Fallback if dimensions aren't ready
-        icon.setDisplaySize(iconSize, iconSize);
-    }
-    
+    // Force icon to be exactly iconSize (12px) regardless of source image size
+    icon.setDisplaySize(iconSize, iconSize);
+    icon.setDepth(101); // Above background
     this.collectionContainer.add(icon);
 
-    // Animation
+    // Subtle animation
     this.scene.tweens.add({
         targets: [bg, icon],
         scaleX: { from: 0, to: 1 },
         scaleY: { from: 0, to: 1 },
-        duration: 500,
+        duration: 300,
         ease: 'Back.out'
     });
 

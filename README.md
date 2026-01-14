@@ -23,6 +23,9 @@ Visit `https://farcaster.xyz/miniapps/Hys_Qc3Q5KF_/cosmic-isles` to play.
 ## 🔗 Play on Farcaster
 **[Play Cosmic Isles](https://farcaster.xyz/miniapps/Hys_Qc3Q5KF_/cosmic-isles)**
 
+## 💎 NFT Setup
+For details on configuring the smart contract and enabling real minting, see [NFT_SETUP.md](./NFT_SETUP.md).
+
 ## 📁 Project Structure
 
 ```

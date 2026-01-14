@@ -5,7 +5,15 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     
-    // Enhanced progress tracking for all 5 islands
+    // If Supabase is not configured or fails, fail gracefully
+    // Check if we are using the mock client by checking for required env vars
+    const isSupabaseConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    if (!isSupabaseConfigured) {
+      console.warn("Supabase credentials missing, skipping database write.");
+      return NextResponse.json({ success: true, warning: "Persistence skipped (no db)" });
+    }
+
     const { data, error } = await supabase
       .from("progress")
       .insert({

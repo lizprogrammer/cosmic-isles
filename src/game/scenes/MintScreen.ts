@@ -68,6 +68,7 @@ export default class MintScreen extends Phaser.Scene {
     }).setInteractive().setDepth(10);
 
     backButton.on('pointerdown', () => {
+      console.log('🔘 Back to Sanctum button clicked!');
       this.scene.start('StarSanctum');
     });
 
@@ -105,7 +106,10 @@ export default class MintScreen extends Phaser.Scene {
     container.setSize(width, height);
     container.setInteractive(new Phaser.Geom.Rectangle(-width/2, -height/2, width, height), Phaser.Geom.Rectangle.Contains);
     
-    container.on('pointerdown', callback);
+    container.on('pointerdown', () => {
+      console.log(`🔘 Button clicked: ${text}`);
+      callback();
+    });
     
     return container;
   }
@@ -214,8 +218,13 @@ export default class MintScreen extends Phaser.Scene {
 
       // 4. Send Transaction
       loadingText.setText('Please confirm transaction in wallet...');
-      // Placeholder contract for demo - User needs to replace with deployed contract
-      const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000"; 
+      // Get contract address from environment or use a placeholder/warning
+      const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000"; 
+      
+      if (CONTRACT_ADDRESS === "0x0000000000000000000000000000000000000000") {
+          console.warn("⚠️ No NFT contract address configured! Using zero address (will likely fail or burn funds).");
+      }
+
       const PRICE_ETH = "0.0001"; // Small charge as requested
 
       const hash = await sendMintTransaction(CONTRACT_ADDRESS, PRICE_ETH, address);
@@ -281,10 +290,12 @@ export default class MintScreen extends Phaser.Scene {
 
     // Share Button
     const shareButton = this.createStyledButton(cx, cy, 'Cast Achievement', 0x9D4EDD, () => {
+        console.log('🔘 Cast Achievement button clicked!');
         const text = "I just reforged the Shattered Star in Cosmic Isles! 🌟\n\nPlay now:";
         const url = "https://farcaster.xyz/miniapps/Hys_Qc3Q5KF_/cosmic-isles";
         const shareUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(url)}`;
         
+        console.log('   Opening Farcaster share URL...');
         window.open(shareUrl, '_blank');
     });
     shareButton.setDepth(301);
@@ -298,6 +309,7 @@ export default class MintScreen extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(301).setInteractive();
 
     playAgainButton.on('pointerdown', () => {
+      console.log('🔘 Play Again button clicked!');
       // Reset game state
       questState.reset();
       this.scene.start('Boot');

@@ -14,6 +14,16 @@ export default class MainMenu extends Phaser.Scene {
 
   preload() {
     this.load.image('splash', '/splash.png');
+    
+    // Preload avatar assets so AvatarCreator loads instantly
+    this.load.image("base-blue", "/sprites/avatar/base-blue.png");
+    this.load.image("base-green", "/sprites/avatar/base-green.png");
+    this.load.image("outfit-1", "/sprites/avatar/outfit-1.png");
+    this.load.image("outfit-2", "/sprites/avatar/outfit-2.png");
+    this.load.image("outfit-3", "/sprites/avatar/outfit-3.png");
+    this.load.image("antenna", "/sprites/avatar/antenna.png");
+    this.load.image("glasses", "/sprites/avatar/glasses.png");
+    this.load.image("hat", "/sprites/avatar/hat.png");
   }
 
   create() {
@@ -56,13 +66,30 @@ export default class MainMenu extends Phaser.Scene {
     const hasSave = storage.hasSave();
 
     // New Game button
+    console.log('🔧 Creating New Game button...');
     const newGameButton = this.createStyledButton(cx, cy + 50, 'New Game', 0xFFD700, () => {
-      if (hasSave) {
-        this.showConfirmReset();
-      } else {
-        this.startNewGame();
+      console.log('🔘🔘🔘 New Game button clicked! CALLBACK FIRED!');
+      try {
+        // Disable button immediately for visual feedback
+        newGameButton.setAlpha(0.7);
+        newGameButton.disableInteractive();
+        
+        // Execute immediately (no async operations)
+        if (hasSave) {
+          console.log('📋 Save exists, showing confirmation...');
+          this.showConfirmReset();
+        } else {
+          console.log('🚀 No save, starting new game...');
+          this.startNewGame();
+        }
+      } catch (error) {
+        console.error('❌ Error in New Game button:', error);
+        // Re-enable button on error
+        newGameButton.setAlpha(1);
+        newGameButton.setInteractive();
       }
     });
+    console.log('✅ New Game button created, interactive:', newGameButton.input?.enabled);
 
     // Pulse animation for New Game button
     this.tweens.add({
@@ -78,6 +105,7 @@ export default class MainMenu extends Phaser.Scene {
     // Continue button (if save exists)
     if (hasSave) {
       const continueButton = this.createStyledButton(cx, cy + 140, 'Continue', 0x00FF00, () => {
+        console.log('🔘 Continue button clicked!');
         this.continueGame();
       });
     }
@@ -88,6 +116,8 @@ export default class MainMenu extends Phaser.Scene {
       color: '#888888',
       fontFamily: 'Arial, sans-serif'
     }).setOrigin(0.5);
+    
+    console.log('✅ MainMenu: UI created, ready for interaction!');
   }
 
   private createStyledButton(x: number, y: number, text: string, color: number, callback: () => void): Phaser.GameObjects.Container {
@@ -111,30 +141,65 @@ export default class MainMenu extends Phaser.Scene {
     
     container.add([bg, label]);
     
-    // Interactive
+    // Interactive - Use simpler approach for better reliability
     container.setSize(width, height);
-    container.setInteractive(new Phaser.Geom.Rectangle(-width/2, -height/2, width, height), Phaser.Geom.Rectangle.Contains);
-    
-    container.on('pointerover', () => {
-        // Only scale if not already pulsing (for new game button handled externally, but self-scaling is fine)
-        // For simplicity, we won't override the external tween if it exists, but this acts as immediate feedback
+    container.setInteractive({
+      hitArea: new Phaser.Geom.Rectangle(-width/2, -height/2, width, height),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+      useHandCursor: true
     });
     
-    container.on('pointerdown', callback);
+    // Multiple event handlers for better reliability
+    container.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      console.log(`👆👆👆 Button "${text}" pointerdown event fired!`, {
+        x: pointer.x,
+        y: pointer.y,
+        worldX: pointer.worldX,
+        worldY: pointer.worldY
+      });
+      callback();
+    });
+    
+    container.on('pointerup', () => {
+      console.log(`👆 Button "${text}" pointerup event fired`);
+    });
+    
+    // Also handle pointerover for visual feedback
+    container.on('pointerover', () => {
+      console.log(`👆 Button "${text}" pointerover - hovering`);
+      container.setScale(1.05);
+    });
+    
+    container.on('pointerout', () => {
+      console.log(`👆 Button "${text}" pointerout - no longer hovering`);
+      container.setScale(1.0);
+    });
+    
+    // Log button creation
+    console.log(`✅ Button "${text}" created at (${x}, ${y}), interactive:`, container.input?.enabled);
     
     return container;
   }
 
   private startNewGame(): void {
-    // Reset all state
-    questState.reset();
-    gameState.currentIsland = 1;
-    gameState.gameStartTime = Date.now();
-    gameState.allIslandsComplete = false;
-    storage.clear();
+    try {
+      console.log('🔄 Resetting game state...');
+      // Reset all state (synchronous, fast) - do this BEFORE scene transition
+      questState.reset();
+      gameState.currentIsland = 1;
+      gameState.gameStartTime = Date.now();
+      gameState.allIslandsComplete = false;
+      storage.clear();
+      console.log('✅ State reset complete');
 
-    console.log('🆕 Starting new game...');
-    this.scene.start('AvatarCreator');
+      console.log('🆕 Starting new game...');
+      // IMMEDIATE scene transition - AvatarCreator preload will be fast (assets already loaded)
+      this.scene.start('AvatarCreator');
+      console.log('✅ Scene transition initiated');
+    } catch (error) {
+      console.error('❌ Error in startNewGame:', error);
+      throw error;
+    }
   }
 
   private continueGame(): void {
@@ -198,6 +263,7 @@ export default class MainMenu extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(101).setInteractive();
 
     yesButton.on('pointerdown', () => {
+      console.log('🔘 Yes, Reset button clicked!');
       overlay.destroy();
       confirmText.destroy();
       yesButton.destroy();
@@ -206,6 +272,7 @@ export default class MainMenu extends Phaser.Scene {
     });
 
     noButton.on('pointerdown', () => {
+      console.log('🔘 Cancel button clicked!');
       overlay.destroy();
       confirmText.destroy();
       yesButton.destroy();
