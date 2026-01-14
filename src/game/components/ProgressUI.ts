@@ -110,50 +110,90 @@ export class ProgressUI {
     return points;
   }
 
+  // Store collected item names for text list
+  private collectedItemNames: string[] = [];
+
   /**
-   * Add a collected item icon to the UI
+   * Add a collected item to the UI - using text list instead of icons
    */
   public addCollectedItem(textureKey: string): void {
-    const iconSize = 8; // Tiny icons - very small for compact list
-    const spacing = 3; // Minimal spacing between icons
-    const labelHeight = 16; // Space for "Items Collected:" label
-    const x = this.collectedItemCount * (iconSize + spacing);
-    const y = labelHeight + iconSize/2; // Position below label
+    // Map texture keys to readable names
+    const itemNames: Record<string, string> = {
+      'glowing-stone': 'Glowing Stone',
+      'ember-core': 'Ember Core',
+      'song-seed': 'Song Seed',
+      'moonstone-fragment': 'Moonstone Fragment',
+      'charged-rod': 'Charged Rod',
+      'star-fragment': 'Star Fragment'
+    };
     
-    // Background for item (tiny circle)
-    const bg = this.scene.add.graphics();
-    bg.fillStyle(0x000000, 0.5);
-    bg.fillCircle(x + iconSize/2, y, iconSize/2 + 0.5);
-    bg.lineStyle(0.5, 0xFFD700, 0.7);
-    bg.strokeCircle(x + iconSize/2, y, iconSize/2 + 0.5);
-    this.collectionContainer.add(bg);
-
-    // Item Icon - force to exact tiny size
-    const icon = this.scene.add.sprite(x + iconSize/2, y, textureKey);
+    const itemName = itemNames[textureKey] || textureKey;
     
-    // Force icon to be exactly iconSize (8px) regardless of source image size
-    icon.setDisplaySize(iconSize, iconSize);
-    icon.setDepth(101); // Above background
-    this.collectionContainer.add(icon);
+    // Don't add duplicates
+    if (this.collectedItemNames.includes(itemName)) {
+      return;
+    }
+    
+    this.collectedItemNames.push(itemName);
+    
+    // Clear and rebuild the list
+    this.updateCollectedItemsList();
+  }
 
-    // Subtle animation
-    this.scene.tweens.add({
-        targets: [bg, icon],
-        scaleX: { from: 0, to: 1 },
-        scaleY: { from: 0, to: 1 },
-        duration: 300,
-        ease: 'Back.out'
+  /**
+   * Update the collected items text list
+   */
+  private updateCollectedItemsList(): void {
+    // Remove existing list items
+    const existingItems = this.collectionContainer.list.filter((child: any) => 
+      child.getData && child.getData('isListItem')
+    );
+    existingItems.forEach((item: any) => item.destroy());
+    
+    if (this.collectedItemNames.length === 0) {
+      return;
+    }
+    
+    // Create text list
+    const labelHeight = 16;
+    const lineHeight = 14;
+    const startY = labelHeight + 5;
+    
+    this.collectedItemNames.forEach((itemName, index) => {
+      const y = startY + (index * lineHeight);
+      
+      // Bullet point
+      const bullet = this.scene.add.text(0, y, '•', {
+        fontSize: '10px',
+        color: '#FFD700',
+        fontFamily: 'Arial, sans-serif'
+      });
+      bullet.setData('isListItem', true);
+      this.collectionContainer.add(bullet);
+      
+      // Item name
+      const text = this.scene.add.text(8, y, itemName, {
+        fontSize: '10px',
+        color: '#FFFFFF',
+        fontFamily: 'Arial, sans-serif'
+      });
+      text.setData('isListItem', true);
+      this.collectionContainer.add(text);
     });
-
-    this.collectedItemCount++;
   }
 
   /**
    * Clear all collected items (for reset/reload)
    */
   public clearCollectedItems(): void {
-    this.collectionContainer.removeAll(true);
+    // Remove list items
+    const existingItems = this.collectionContainer.list.filter((child: any) => 
+      child.getData && child.getData('isListItem')
+    );
+    existingItems.forEach((item: any) => item.destroy());
+    
     this.collectedItemCount = 0;
+    this.collectedItemNames = [];
   }
 
   /**

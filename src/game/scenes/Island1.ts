@@ -56,7 +56,7 @@ export default class Island1 extends Phaser.Scene {
       this.load.image(ASSETS.NPC_SAGE, '/sprites/npc-starsage.png');
       
       this.load.image(ASSETS.PORTAL, '/sprites/portal.png');
-      // Door sprites removed - they're already in the room backgrounds
+      this.load.image(ASSETS.DOOR_OPEN, '/sprites/door-open.png'); // Needed for large door overlay
       this.load.image(ASSETS.BUSHES, '/sprites/bushes.png');
       this.load.image(ASSETS.FLOWERS, '/sprites/flower-pile.png');
       this.load.image(ASSETS.FLOATING_EMBER, '/sprites/floating-ember-core.png');
@@ -290,7 +290,13 @@ export default class Island1 extends Phaser.Scene {
                   
                   isUnlocked = true;
                   
-                  // Portal appears (door is in background)
+                  // Large door-open icon behind all objects (except background)
+                  this.currentObject = this.add.sprite(width * 0.5, height * 0.5, ASSETS.DOOR_OPEN)
+                    .setScale(assetScale * 1.5) // Large door
+                    .setDepth(5) // Behind all objects (player depth 50, NPC depth 20, items depth 40) but above background (depth 0)
+                    .setAlpha(0.9); // Slightly transparent
+                  
+                  // Portal appears for interaction
                   this.exitObject = this.add.sprite(width * 0.5, height * 0.5, ASSETS.PORTAL)
                     .setScale(assetScale * 0.6)
                     .setDepth(15)
@@ -407,7 +413,13 @@ export default class Island1 extends Phaser.Scene {
                this.npcDialogueState.set(this.currentNpc, "You may enter the portal.");
                this.canExit = true;
                
-               // Portal appears (door is in background)
+               // Large door-open icon behind all objects (except background)
+               this.currentObject = this.add.sprite(width * 0.5, height * 0.5, ASSETS.DOOR_OPEN)
+                 .setScale(assetScale * 1.5) // Large door
+                 .setDepth(5) // Behind all objects but above background
+                 .setAlpha(0.9); // Slightly transparent
+               
+               // Portal appears for interaction
                this.exitObject = this.add.sprite(width * 0.5, height * 0.5, ASSETS.PORTAL)
                  .setScale(assetScale * 0.6)
                  .setDepth(15)
@@ -585,10 +597,11 @@ export default class Island1 extends Phaser.Scene {
         const playerStartY = height * 0.7;
         const minDistance = 200;
         
+        // Position flower piles closer to bottom of screen
         const positions = [
-            { x: width * 0.6, y: height * 0.5 },
-            { x: width * 0.75, y: height * 0.6 },
-            { x: width * 0.65, y: height * 0.75 }
+            { x: width * 0.5, y: height * 0.85 },  // Bottom center
+            { x: width * 0.7, y: height * 0.9 },  // Bottom right
+            { x: width * 0.3, y: height * 0.9 }   // Bottom left
         ];
         
         // Validate positions are far enough from player
