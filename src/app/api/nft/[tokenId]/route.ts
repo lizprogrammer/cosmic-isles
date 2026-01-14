@@ -14,14 +14,23 @@ export async function GET(
   request: Request,
   { params }: { params: { tokenId: string } }
 ) {
+  console.log('🔍 ========== NFT METADATA API DEBUG ==========');
+  console.log('🔍 Request URL:', request.url);
+  console.log('🔍 Request method:', request.method);
+  
   try {
     const tokenId = params.tokenId;
+    console.log('🔍 Token ID requested:', tokenId);
     
     // TODO: In production, retrieve actual metadata from database
     // For now, return template metadata that follows ERC-721 standard
     
     // Get base URL for images
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://farcaster.xyz/miniapps/Hys_Qc3Q5KF_/cosmic-isles';
+    console.log('🔍 Base URL:', baseUrl);
+    
+    const imageUrl = `${baseUrl}/sprites/star-fragment.png`;
+    console.log('🔍 Image URL:', imageUrl);
     
     const metadata = {
       // Required ERC-721 fields
@@ -64,6 +73,13 @@ export async function GET(
       youtube_url: null
     };
     
+    console.log('✅ Metadata generated:', {
+      name: metadata.name,
+      image: metadata.image,
+      attributesCount: metadata.attributes.length
+    });
+    console.log('🔍 ========== METADATA API DEBUG COMPLETE ==========');
+    
     return NextResponse.json(metadata, {
       headers: {
         'Content-Type': 'application/json',
@@ -72,7 +88,8 @@ export async function GET(
       }
     });
   } catch (error) {
-    console.error("NFT metadata error:", error);
+    console.error('❌ ========== METADATA API DEBUG END (ERROR) ==========');
+    console.error("❌ NFT metadata error:", error);
     return NextResponse.json(
       { error: "Failed to fetch NFT metadata" },
       { 

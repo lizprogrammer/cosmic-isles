@@ -277,24 +277,32 @@ export const sendMintTransaction = async (
   priceInEth: string,
   fromAddress: string
 ): Promise<string | null> => {
+  console.log('📤 ========== SEND MINT TRANSACTION DEBUG ==========');
+  console.log('📤 Contract:', contractAddress);
+  console.log('📤 Price:', priceInEth, 'ETH');
+  console.log('📤 From:', fromAddress);
+  
   // Get provider - this will be Farcaster wallet if available
+  console.log('📤 Step 1: Getting wallet provider...');
   const provider = await getProvider();
   if (!provider) {
-    console.error('No provider available for transaction');
+    console.error('❌ Step 1 FAILED: No provider available for transaction');
     return null;
   }
+  console.log('✅ Step 1 SUCCESS: Provider obtained');
 
   try {
     // Convert ETH to Wei (hex)
     const valueWei = BigInt(parseFloat(priceInEth) * 1e18).toString(16);
     const data = '0x1249c58b'; // mint() function selector
 
-    console.log('📤 Sending mint transaction via Farcaster wallet...', {
-      from: fromAddress,
-      to: contractAddress,
-      value: priceInEth + ' ETH',
-      chainId: BASE_CHAIN_ID
-    });
+    console.log('📤 Step 2: Preparing transaction parameters...');
+    console.log('📤   Value (Wei):', '0x' + valueWei);
+    console.log('📤   Data (mint function):', data);
+    console.log('📤   Chain ID:', BASE_CHAIN_ID);
+
+    console.log('📤 Step 3: Requesting transaction from wallet...');
+    console.log('📤   User will see wallet confirmation prompt');
 
     // Use the provider (which is Farcaster wallet if available)
     const txHash = await provider.request({
@@ -309,10 +317,25 @@ export const sendMintTransaction = async (
       ],
     });
 
-    console.log('✅ Transaction sent via Farcaster wallet:', txHash);
+    console.log('✅ Step 3 SUCCESS: Transaction sent!');
+    console.log('📤 Transaction Hash:', txHash);
+    console.log('📤 View on BaseScan:', `https://basescan.org/tx/${txHash}`);
+    console.log('📤 Check wallet on BaseScan:', `https://basescan.org/address/${fromAddress}`);
+    console.log('📤 ========== TRANSACTION DEBUG COMPLETE ==========');
+    
     return txHash;
-  } catch (error) {
-    console.error("❌ Mint transaction failed", error);
+  } catch (error: any) {
+    console.error('❌ ========== TRANSACTION DEBUG END (ERROR) ==========');
+    console.error('❌ Transaction failed:', error);
+    console.error('❌ Error code:', error?.code);
+    console.error('❌ Error message:', error?.message);
+    
+    if (error?.code === 4001) {
+      console.error('❌ User rejected the transaction');
+    } else if (error?.code === -32603) {
+      console.error('❌ Internal JSON-RPC error - contract may not exist or insufficient funds');
+    }
+    
     return null;
   }
 };
